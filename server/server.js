@@ -49,9 +49,18 @@ db.exec(`
     sub_end TEXT DEFAULT '',
     status TEXT DEFAULT 'pending',
     notes TEXT DEFAULT '',
+    payment_method TEXT DEFAULT '',
     created_at INTEGER
   );
 `);
+
+// ---------- ترحيل: إضافة عمود طريقة الدفع لجدول tenants إن لم يكن موجوداً ----------
+(function migrateTenantsPaymentMethod() {
+  const cols = db.prepare("PRAGMA table_info(tenants)").all();
+  if (!cols.some(c => c.name === 'payment_method')) {
+    db.exec("ALTER TABLE tenants ADD COLUMN payment_method TEXT DEFAULT ''");
+  }
+})();
 
 // ---------- ترحيل: تحويل جدول kv القديم (بدون فصل مدارس) إلى tenant افتراضي ----------
 (function migrateLegacyKv() {
@@ -141,7 +150,7 @@ function tenantToPublic(t) {
   return {
     id: t.id, name: t.name, username: t.username, contactPerson: t.contact_person, phone: t.phone, email: t.email,
     membershipType: t.membership_type, termType: t.term_type, subStart: t.sub_start, subEnd: t.sub_end,
-    status: t.status, notes: t.notes, createdAt: t.created_at,
+    status: t.status, notes: t.notes, paymentMethod: t.payment_method, createdAt: t.created_at,
   };
 }
 function subscriptionActive(t) {
@@ -223,7 +232,7 @@ app.get('/api/platform/tenants', platformAuth, (req, res) => {
 });
 
 app.post('/api/platform/tenants', platformAuth, (req, res) => {
-  const { name, contactPerson, phone, email, membershipType, termType, subStart, subEnd, status, username, password } = req.body || {};
+  const { name, contactPerson, phone, email, membershipType, termType, subStart, subEnd, status, paymentMethod, username, password } = req.body || {};
   if (!name || !username || !password) return res.status(400).json({ error: 'missing_fields' });
   const uname = String(username).trim().toLowerCase();
   if (!/^[a-z0-9_.-]{3,40}$/.test(uname)) return res.status(400).json({ error: 'invalid_username' });
@@ -234,11 +243,11 @@ app.post('/api/platform/tenants', platformAuth, (req, res) => {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = hashPassword(password, salt);
   db.prepare(`INSERT INTO tenants
-    (id,name,username,password_hash,salt,contact_person,phone,email,membership_type,term_type,sub_start,sub_end,status,notes,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    (id,name,username,password_hash,salt,contact_person,phone,email,membership_type,term_type,sub_start,sub_end,status,notes,payment_method,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(id, String(name).trim(), uname, hash, salt, contactPerson || '', phone || '', email || '',
         validTypes.includes(membershipType) ? membershipType : 'school', termType || '', subStart || '', subEnd || '',
-        ['active', 'pending', 'suspended'].includes(status) ? status : 'active', '', Date.now());
+        ['active', 'pending', 'suspended'].includes(status) ? status : 'active', '', paymentMethod || '', Date.now());
   const t = db.prepare('SELECT * FROM tenants WHERE id = ?').get(id);
   res.json({ ok: true, tenant: tenantToPublic(t) });
 });
@@ -259,9 +268,10 @@ app.put('/api/platform/tenants/:id', platformAuth, (req, res) => {
     sub_end: b.subEnd !== undefined ? b.subEnd : t.sub_end,
     status: ['active', 'pending', 'suspended'].includes(b.status) ? b.status : t.status,
     notes: b.notes !== undefined ? b.notes : t.notes,
+    payment_method: b.paymentMethod !== undefined ? b.paymentMethod : t.payment_method,
   };
-  db.prepare(`UPDATE tenants SET name=?,contact_person=?,phone=?,email=?,membership_type=?,term_type=?,sub_start=?,sub_end=?,status=?,notes=? WHERE id=?`)
-    .run(next.name, next.contact_person, next.phone, next.email, next.membership_type, next.term_type, next.sub_start, next.sub_end, next.status, next.notes, t.id);
+  db.prepare(`UPDATE tenants SET name=?,contact_person=?,phone=?,email=?,membership_type=?,term_type=?,sub_start=?,sub_end=?,status=?,notes=?,payment_method=? WHERE id=?`)
+    .run(next.name, next.contact_person, next.phone, next.email, next.membership_type, next.term_type, next.sub_start, next.sub_end, next.status, next.notes, next.payment_method, t.id);
   if (b.password) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(b.password, salt);
@@ -269,6 +279,23 @@ app.put('/api/platform/tenants/:id', platformAuth, (req, res) => {
   }
   const updated = db.prepare('SELECT * FROM tenants WHERE id = ?').get(t.id);
   res.json({ ok: true, tenant: tenantToPublic(updated) });
+});
+
+// ---------- مزوّد الخدمة يرفع شعار مدرسة نيابة عنها ----------
+app.put('/api/platform/tenants/:id/logo', platformAuth, (req, res) => {
+  const t = db.prepare('SELECT * FROM tenants WHERE id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'not_found' });
+  const { logoDataUrl } = req.body || {};
+  const row = db.prepare('SELECT value FROM kv WHERE tenant_id = ? AND key = ?').get(t.id, 'schools');
+  let schools = [];
+  if (row) { try { schools = JSON.parse(row.value) || []; } catch (e) {} }
+  if (!schools.length) {
+    schools = [{ id: 's1', name: t.name, contactPerson: t.contact_person, phone: t.phone, email: t.email, isActive: true, joinDate: todayStr() }];
+  }
+  schools[0] = { ...schools[0], logoDataUrl: logoDataUrl || '' };
+  qUpsert.run(t.id, 'schools', JSON.stringify(schools), Date.now());
+  broadcast(t.id, 'schools', schools, '');
+  res.json({ ok: true });
 });
 
 // ---------- مزامنة لحظية (SSE) — لكل مدرسة قناة مستقلة ----------

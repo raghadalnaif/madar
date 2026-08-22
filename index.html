@@ -1050,7 +1050,15 @@ const TenantSession = {
 };
 
 const MEMBERSHIP_LABELS={nursery:'حضانة / دار ضيافة أطفال',kindergarten:'روضة أطفال',school:'مدرسة (كل المراحل)'};
-const TERM_LABELS={term1:'الفصل الدراسي الأول',term2:'الفصل الدراسي الثاني',full_year:'العام الدراسي كاملاً',months:'مدة محددة بالأشهر'};
+const TERM_LABELS={monthly:'شهري',yearly:'سنة كاملة',two_years:'سنتان',term1:'الفصل الدراسي الأول',term2:'الفصل الدراسي الثاني',full_year:'العام الدراسي كاملاً',custom:'تواريخ محددة'};
+const PAYMENT_METHOD_LABELS={bank_transfer:'تحويل بنكي',cash:'نقداً',mada:'شبكة مدى',card:'بطاقة ائتمان',other:'أخرى'};
+
+// ميزات حصرية لعضوية "مدرسة" (بكل مراحلها) — لا تظهر لعضوية روضة/حضانة
+const TIER_PREMIUM_VIEWS=new Set(['schools','branches','hr','govDocs','accounting','monthlyClose','auditLog','tasks','branchTasks','branchReport']);
+function _tierAllows(view){
+  if(!TIER_PREMIUM_VIEWS.has(view)) return true;
+  return (TenantSession.tenant?.membershipType)==='school';
+}
 const TENANT_STATUS_LABELS={active:'نشطة',pending:'قيد المراجعة',suspended:'موقوفة'};
 const LP_FEATURES={
   subs:{label:'الاشتراكات',title:'إدارة اشتراكات مرنة بالكامل',desc:'أنشئي باقات اشتراك حسب الفترة (صباحي/مسائي) والمدة (يومي/أسبوعي/شهري)، وتابعي كل اشتراك حتى تاريخ انتهائه.',bullets:['تنبيه تلقائي قبل انتهاء الاشتراك','تجديد وتمديد بضغطة واحدة','خصومات ورعاية خاصة لكل طفل'],visual:'subs'},
@@ -1095,6 +1103,12 @@ const Provider = {
   },
   async updateTenant(id,payload){
     const r=await fetch(API_BASE+'/platform/tenants/'+encodeURIComponent(id),{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+this.token},body:JSON.stringify(payload)});
+    const body=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(body.error||('http '+r.status));
+    return body;
+  },
+  async setTenantLogo(id,logoDataUrl){
+    const r=await fetch(API_BASE+'/platform/tenants/'+encodeURIComponent(id)+'/logo',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+this.token},body:JSON.stringify({logoDataUrl})});
     const body=await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(body.error||('http '+r.status));
     return body;
@@ -1232,6 +1246,7 @@ const App = {
         {v:'messages',icon:'💬',label:'الرسائل الداخلية'},
       ]},
     ];
+    const visibleGroups=groups.map(g=>({...g,items:g.items.filter(it=>_tierAllows(it.v))})).filter(g=>g.items.length);
     return `
     <div class="sidebar">
       <div class="sidebar-logo" style="text-align:center">
@@ -1240,7 +1255,8 @@ const App = {
         <p>إدارة المدارس من مكان واحد</p>
       </div>
       <div class="nav-section">
-        ${(()=>{const u=Auth.user;const unreadMsg=u?DB.unreadInternalCount(u.id,u.role,Auth.branchId()):0;return groups.map(g=>{const head=g.label?`<div class="nav-label">${g.label}</div>`:'';const items=g.items.map(l=>{const isMsg=l.v==='messages';const dot=isMsg&&unreadMsg>0?`<span class="nav-msg-dot" title="${unreadMsg} رسالة غير مقروءة"></span>`:'';return `<div class="nav-item ${App.view===l.v?'active':''}" data-v="${l.v}" style="position:relative" onclick="App.go('${l.v}');closeSidebar()">${l.icon} ${l.label}${dot}</div>`;}).join('');return `<div class="nav-group">${head}${items}</div>`;}).join('')})()}
+        ${(()=>{const u=Auth.user;const unreadMsg=u?DB.unreadInternalCount(u.id,u.role,Auth.branchId()):0;return visibleGroups.map(g=>{const head=g.label?`<div class="nav-label">${g.label}</div>`:'';const items=g.items.map(l=>{const isMsg=l.v==='messages';const dot=isMsg&&unreadMsg>0?`<span class="nav-msg-dot" title="${unreadMsg} رسالة غير مقروءة"></span>`:'';return `<div class="nav-item ${App.view===l.v?'active':''}" data-v="${l.v}" style="position:relative" onclick="App.go('${l.v}');closeSidebar()">${l.icon} ${l.label}${dot}</div>`;}).join('');return `<div class="nav-group">${head}${items}</div>`;}).join('')})()}
+        ${(Auth.isSuperAdmin()&&(TenantSession.tenant?.membershipType)!=='school')?`<div class="nav-group"><div class="nav-label">ترقية الباقة</div><div class="nav-item" onclick="App.go('upgradeInfo')" style="color:#fde68a">⭐ ميزات إضافية لمدرسة كاملة</div></div>`:''}
       </div>
       <div style="flex-shrink:0;padding:6px 6px;border-top:1px solid rgba(255,255,255,.15)">
         <div class="nav-item" onclick="Auth.logout()">🚪 تسجيل الخروج</div>
@@ -1248,7 +1264,7 @@ const App = {
     </div>`;
   },
   topbar(){
-    const titles={dashboard:'الرئيسية',schools:'إدارة المدارس',branches:'إدارة الفروع',children:'إدارة الأطفال',subscriptions:'الاشتراكات',reports:'التقارير',users:'المستخدمون',attendance:'الحضور والانصراف',whatsapp:'رسائل واتساب',my_reports:'تقارير الحضور',myAttendance:'🕐 حضوري',myLeaves:'🏖️ إجازاتي',teachers:'المعلمات',activities:'دليل الأنشطة',settings:'⚙️ الإعدادات',sales:'🛍️ المبيعات',accounting:'🧾 المحاسبة',monthlyClose:'🔒 الإقفال الشهري',branchReport:'📈 تقرير الفرع الشهري',childNotes:'📝 ملاحظات الأطفال',expenses:'💸 مصروفات الفرع',messages:'💬 الرسائل الداخلية',auditLog:'🔍 سجل النشاط',govDocs:'🏛️ الوثائق الحكومية',hr:'👥 الموارد البشرية'};
+    const titles={dashboard:'الرئيسية',schools:'إدارة المدارس',branches:'إدارة الفروع',children:'إدارة الأطفال',subscriptions:'الاشتراكات',reports:'التقارير',users:'المستخدمون',attendance:'الحضور والانصراف',whatsapp:'رسائل واتساب',my_reports:'تقارير الحضور',myAttendance:'🕐 حضوري',myLeaves:'🏖️ إجازاتي',teachers:'المعلمات',activities:'دليل الأنشطة',settings:'⚙️ الإعدادات',sales:'🛍️ المبيعات',accounting:'🧾 المحاسبة',monthlyClose:'🔒 الإقفال الشهري',branchReport:'📈 تقرير الفرع الشهري',childNotes:'📝 ملاحظات الأطفال',expenses:'💸 مصروفات الفرع',messages:'💬 الرسائل الداخلية',auditLog:'🔍 سجل النشاط',govDocs:'🏛️ الوثائق الحكومية',hr:'👥 الموارد البشرية',upgradeInfo:'⭐ ترقية الباقة'};
     const now=new Date();
     const hm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
     const unread=DB.unreadCount();
@@ -1394,10 +1410,12 @@ const App = {
       settings:()=>Auth.isSuperAdmin(),
       govDocs:()=>Auth.isSuperAdmin(),
       hr:()=>Auth.isSuperAdmin()||Auth.isSchoolAdmin(),
+      upgradeInfo:()=>Auth.isSuperAdmin(),
     };
     const guard=guards[App.view];
     if(guard&&!guard()) return Views._forbidden();
-    const map={dashboard:Views.dashboard,schools:Views.schools,branches:Views.branches,children:Views.children,subscriptions:Views.subscriptions,reports:Views.reports,users:Views.users,attendance:Views.attendance,whatsapp:Views.whatsapp,my_reports:Views.myReports,myAttendance:Views.myAttendance,myLeaves:Views.myLeaves,teachers:Views.teachers,activities:Views.activities,sales:Views.sales,accounting:Views.accounting,monthlyClose:Views.monthlyClose,expenses:Views.expenses,tasks:Views.tasks,branchTasks:Views.branchTasks,cashClosing:Views.cashClosing,statement:Views.statement,auditLog:Views.auditLog,branchReport:Views.branchReport,childNotes:Views.childNotes,messages:Views.messages,settings:Views.settings,govDocs:Views.govDocs,hr:Views.hr};
+    if(!_tierAllows(App.view)) return Views._premiumLocked(App.view);
+    const map={dashboard:Views.dashboard,schools:Views.schools,branches:Views.branches,children:Views.children,subscriptions:Views.subscriptions,reports:Views.reports,users:Views.users,attendance:Views.attendance,whatsapp:Views.whatsapp,my_reports:Views.myReports,myAttendance:Views.myAttendance,myLeaves:Views.myLeaves,teachers:Views.teachers,activities:Views.activities,sales:Views.sales,accounting:Views.accounting,monthlyClose:Views.monthlyClose,expenses:Views.expenses,tasks:Views.tasks,branchTasks:Views.branchTasks,cashClosing:Views.cashClosing,statement:Views.statement,auditLog:Views.auditLog,branchReport:Views.branchReport,childNotes:Views.childNotes,messages:Views.messages,settings:Views.settings,govDocs:Views.govDocs,hr:Views.hr,upgradeInfo:Views.upgradeInfo};
     const fn=map[App.view]||Views.dashboard;
     try{return fn();}
     catch(e){console.error('[CCS]',App.view,e);return `<div style="padding:32px;text-align:center"><div style="font-size:48px;margin-bottom:16px">⚠️</div><p style="color:#ef4444;font-size:16px;font-weight:700">خطأ في تحميل الصفحة: ${App.view}</p><pre style="background:#f1f5f9;padding:16px;border-radius:8px;font-size:12px;text-align:left;overflow:auto;max-width:600px;margin:16px auto">${e.message}\n${(e.stack||'').split('\n').slice(0,5).join('\n')}</pre><button class="btn btn-primary" onclick="App.go('dashboard')">العودة للرئيسية</button></div>`;}
@@ -1680,7 +1698,7 @@ providerDashboard(tenants){
       </div>
       <div class="card">
         <div class="table-wrap"><table>
-          <thead><tr><th>المدرسة</th><th>المسؤول</th><th>نوع العضوية</th><th>الاشتراك</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <thead><tr><th>المدرسة</th><th>المسؤول</th><th>نوع العضوية</th><th>الاشتراك</th><th>طريقة الدفع</th><th>الحالة</th><th>إجراءات</th></tr></thead>
           <tbody>
             ${tenants.length?tenants.map(t=>{
               const expired=t.status==='active'&&t.subEnd&&t.subEnd<today();
@@ -1690,12 +1708,13 @@ providerDashboard(tenants){
                 <td>${esc(t.contactPerson||'—')}<br><small style="color:#94a3b8">${esc(t.phone||'')}</small></td>
                 <td>${MEMBERSHIP_LABELS[t.membershipType]||t.membershipType||'—'}</td>
                 <td style="font-size:12px">${TERM_LABELS[t.termType]||'—'}${t.subStart||t.subEnd?`<br>${formatDate(t.subStart)||'—'} → ${formatDate(t.subEnd)||'—'}`:''}</td>
+                <td style="font-size:12px">${PAYMENT_METHOD_LABELS[t.paymentMethod]||'—'}</td>
                 <td>
                   <span class="badge ${expired?'badge-red':(stMap[t.status]||'badge-gray')}">${expired?'منتهي الاشتراك':(TENANT_STATUS_LABELS[t.status]||t.status)}</span>
                 </td>
                 <td><button class="btn btn-secondary btn-xs" onclick="openProviderEditTenant('${t.id}')">تعديل</button></td>
               </tr>`;
-            }).join(''):`<tr><td colspan="6"><div class="empty-state"><p>لا توجد مدارس مسجّلة بعد</p></div></td></tr>`}
+            }).join(''):`<tr><td colspan="7"><div class="empty-state"><p>لا توجد مدارس مسجّلة بعد</p></div></td></tr>`}
           </tbody>
         </table></div>
       </div>
@@ -1712,6 +1731,17 @@ providerTenantForm(t){
     <div class="modal-body">
       <div id="pv-err" style="display:none;margin-bottom:16px" class="alert-box alert-red"></div>
       <div class="input-group"><label>اسم المدرسة</label><input class="input" id="pv-name" value="${esc(t?.name||'')}"></div>
+      ${edit?`
+      <div class="input-group">
+        <label>شعار المدرسة</label>
+        <div style="display:flex;align-items:center;gap:14px">
+          <img id="pv-logo-preview" src="logo.png" style="width:56px;height:56px;object-fit:contain;border:1px solid #e2e8f0;border-radius:10px;background:#fff">
+          <div>
+            <input type="file" id="pv-logo-file" accept="image/*" onchange="_pvLogoPick(this,'${t.id}')">
+            <div style="font-size:11px;color:#94a3b8;margin-top:4px">يرفع فوراً بمجرد اختيار الصورة (أقل من 2 ميجابايت)</div>
+          </div>
+        </div>
+      </div>`:''}
       <div class="input-group"><label>اسم المسؤول</label><input class="input" id="pv-contact" value="${esc(t?.contactPerson||'')}"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="input-group"><label>الهاتف</label><input class="input" id="pv-phone" value="${esc(t?.phone||'')}"></div>
@@ -1724,18 +1754,27 @@ providerTenantForm(t){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <div class="input-group"><label>مدة الاشتراك</label>
-          <select class="input" id="pv-term">
+          <select class="input" id="pv-term" onchange="pvAutoEndDate()">
             <option value="">—</option>
             ${Object.entries(TERM_LABELS).map(([k,v])=>`<option value="${k}" ${t?.termType===k?'selected':''}>${v}</option>`).join('')}
           </select>
         </div>
-        <div class="input-group"><label>بداية الاشتراك</label><input class="input" id="pv-start" type="date" value="${t?.subStart||''}"></div>
+        <div class="input-group"><label>بداية الاشتراك</label><input class="input" id="pv-start" type="date" value="${t?.subStart||''}" onchange="pvAutoEndDate()"></div>
         <div class="input-group"><label>نهاية الاشتراك</label><input class="input" id="pv-end" type="date" value="${t?.subEnd||''}"></div>
       </div>
-      <div class="input-group"><label>حالة الحساب</label>
-        <select class="input" id="pv-status">
-          ${Object.entries(TENANT_STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${(t?.status||'active')===k?'selected':''}>${v}</option>`).join('')}
-        </select>
+      <div style="font-size:11px;color:#94a3b8;margin-top:-12px;margin-bottom:14px">اختيار "شهري/سنة كاملة/سنتان" مع تاريخ البداية يحسب تاريخ النهاية تلقائياً — تقدرين تعدّلينه يدوياً بعدها.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="input-group"><label>حالة الحساب</label>
+          <select class="input" id="pv-status">
+            ${Object.entries(TENANT_STATUS_LABELS).map(([k,v])=>`<option value="${k}" ${(t?.status||'active')===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="input-group"><label>طريقة الدفع (لمتابعتك الخاصة)</label>
+          <select class="input" id="pv-payment">
+            <option value="">—</option>
+            ${Object.entries(PAYMENT_METHOD_LABELS).map(([k,v])=>`<option value="${k}" ${t?.paymentMethod===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
       </div>
       ${!edit?`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -1893,22 +1932,22 @@ _superDash(){
       <div style="font-size:28px;font-weight:900">${unreadMsgs}</div>
       <div style="font-size:12px;opacity:.8;margin-top:4px">${unreadMsgs>0?'رسالة غير مقروءة — انقر للقراءة':'لا توجد رسائل جديدة'}</div>
     </div>
-    <div style="background:${expiringCnt>0?'linear-gradient(135deg,#f59e0b,#d97706)':'#fff'};color:${expiringCnt>0?'#fff':'#1e293b'};border-radius:14px;padding:16px;border:2px solid ${expiringCnt>0?'transparent':'#e2e8f0'};cursor:pointer" onclick="App.go('tasks')">
+    ${_tierAllows('tasks')?`<div style="background:${expiringCnt>0?'linear-gradient(135deg,#f59e0b,#d97706)':'#fff'};color:${expiringCnt>0?'#fff':'#1e293b'};border-radius:14px;padding:16px;border:2px solid ${expiringCnt>0?'transparent':'#e2e8f0'};cursor:pointer" onclick="App.go('tasks')">
       <div style="font-size:11px;opacity:${expiringCnt>0?'.85':'.6'};margin-bottom:6px">📋 اشتراكات تنتهي خلال 7 أيام</div>
       <div style="font-size:28px;font-weight:900">${expiringCnt}</div>
       <div style="font-size:12px;opacity:.8;margin-top:4px">${defaulterCnt} متأخر · ${pendingCnt} معلق</div>
-    </div>
-    <div style="background:${hrAlerts>0?'linear-gradient(135deg,#ef4444,#dc2626)':'#fff'};color:${hrAlerts>0?'#fff':'#1e293b'};border-radius:14px;padding:16px;border:2px solid ${hrAlerts>0?'transparent':'#e2e8f0'};cursor:pointer" onclick="App.go('hr')">
+    </div>`:''}
+    ${_tierAllows('hr')?`<div style="background:${hrAlerts>0?'linear-gradient(135deg,#ef4444,#dc2626)':'#fff'};color:${hrAlerts>0?'#fff':'#1e293b'};border-radius:14px;padding:16px;border:2px solid ${hrAlerts>0?'transparent':'#e2e8f0'};cursor:pointer" onclick="App.go('hr')">
       <div style="font-size:11px;opacity:${hrAlerts>0?'.85':'.6'};margin-bottom:6px">👥 تنبيهات الموارد البشرية</div>
       <div style="font-size:28px;font-weight:900">${hrAlerts}</div>
       <div style="font-size:12px;opacity:.8;margin-top:4px">${hrAlerts>0?'وثائق منتهية أو تنتهي قريباً':'جميع الوثائق سليمة ✅'}</div>
-    </div>
+    </div>`:''}
   </div>
   <!-- إجراءات سريعة للمدير العام -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-    <button class="btn" onclick="App.go('tasks')" style="flex:1;min-width:130px;justify-content:center;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:700;border:none">📌 مهام اليوم (${defaulterCnt+pendingCnt+expiringCnt})</button>
+    ${_tierAllows('tasks')?`<button class="btn" onclick="App.go('tasks')" style="flex:1;min-width:130px;justify-content:center;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;font-weight:700;border:none">📌 مهام اليوم (${defaulterCnt+pendingCnt+expiringCnt})</button>`:''}
     <button class="btn" onclick="App.go('attendance')" style="flex:1;min-width:130px;justify-content:center;background:linear-gradient(135deg,#0f766e,#0d9488);color:#fff;font-weight:700;border:none">✅ الحضور الكلي</button>
-    <button class="btn" onclick="App.go('hr')" style="flex:1;min-width:130px;justify-content:center;background:${hrAlerts>0?'linear-gradient(135deg,#ef4444,#dc2626)':'linear-gradient(135deg,#475569,#334155)'};color:#fff;font-weight:700;border:none">👥 الموارد البشرية${hrAlerts>0?' ('+hrAlerts+')':''}</button>
+    ${_tierAllows('hr')?`<button class="btn" onclick="App.go('hr')" style="flex:1;min-width:130px;justify-content:center;background:${hrAlerts>0?'linear-gradient(135deg,#ef4444,#dc2626)':'linear-gradient(135deg,#475569,#334155)'};color:#fff;font-weight:700;border:none">👥 الموارد البشرية${hrAlerts>0?' ('+hrAlerts+')':''}</button>`:''}
     <button class="btn" onclick="App.go('messages')" style="flex:1;min-width:130px;justify-content:center;background:${unreadMsgs>0?'linear-gradient(135deg,#7c3aed,#6d28d9)':'linear-gradient(135deg,#475569,#334155)'};color:#fff;font-weight:700;border:none">💬 الرسائل${unreadMsgs>0?' ('+unreadMsgs+')':''}</button>
     <button class="btn" onclick="App.go('settings')" style="flex:1;min-width:130px;justify-content:center;background:linear-gradient(135deg,#334155,#1e293b);color:#fff;font-weight:700;border:none">⚙️ الإعدادات</button>
   </div>
@@ -1944,13 +1983,13 @@ _superDash(){
       <div><div style="font-size:11px;opacity:.7">${monthNet>=0?'💎 صافي الربح':'⚠️ خسارة'}</div><div style="font-size:24px;font-weight:900;color:${monthNet>=0?'#10b981':'#ef4444'}">${monthNet.toLocaleString()} ر.س</div></div>
       <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
         <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)" onclick="App.go('expenses')">💸 المصروفات</button>
-        <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)" onclick="App.go('accounting')">🧾 المحاسبة</button>
+        ${_tierAllows('accounting')?`<button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)" onclick="App.go('accounting')">🧾 المحاسبة</button>`:''}
       </div>
     </div>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card green"><div class="stat-val">${schools.length}</div><div class="stat-lbl">🏫 المدارس المشتركة</div></div>
+    ${_tierAllows('schools')?`<div class="stat-card green"><div class="stat-val">${schools.length}</div><div class="stat-lbl">🏫 المدارس المشتركة</div></div>`:''}
     <div class="stat-card blue"><div class="stat-val">${children.length}</div><div class="stat-lbl">👶 إجمالي الأطفال</div></div>
     <div class="stat-card green"><div class="stat-val">${subs.filter(s=>s.isActive).length}</div><div class="stat-lbl">📋 اشتراكات فعالة</div></div>
     <div class="stat-card yellow"><div class="stat-val">${totalRevenue.toLocaleString()} ر.س</div><div class="stat-lbl">💰 إجمالي الإيرادات</div></div>
@@ -1975,7 +2014,7 @@ _superDash(){
       }).join('')}
     </div>
   </div>
-  <div class="card">
+  ${_tierAllows('schools')?`<div class="card">
     <div class="card-title">📊 المدارس المشتركة</div>
     <table>
       <thead><tr><th>المدرسة</th><th>التواصل</th><th>الأطفال</th><th>الاشتراكات الفعالة</th><th>الحالة</th></tr></thead>
@@ -1993,7 +2032,7 @@ _superDash(){
         }).join('')}
       </tbody>
     </table>
-  </div>
+  </div>`:''}
   ${_fbStatus==='error'?`<div class="alert-box alert-red" style="margin-top:16px">
     🔴 <div><strong>Firebase غير متصل</strong> — البيانات المعروضة من الذاكرة المحلية فقط وقد لا تكون كاملة.
     <button class="btn btn-xs" style="background:#991b1b;color:#fff;border:none;margin-right:8px" onclick="showDataRecovery()">🔧 تشخيص واسترداد</button></div>
@@ -2021,6 +2060,7 @@ _schoolDash(){
   const activeSubs=subs.filter(s=>s.isActive);
   const expiredSubs=al.expired.filter(s=>diffDays(T0,s.endDate)<=5);
   const branch=DB.branches().find(b=>b.id===bid);
+  const expiredTarget=_tierAllows('branchTasks')?'branchTasks':'subscriptions';
   // الأطفال الغائبون اليوم
   const absentKids=children.filter(c=>attMap[c.id]?.status==='absent');
   // حالة الاشتراك لكل طفل
@@ -2062,7 +2102,7 @@ _schoolDash(){
   <!-- إجراءات سريعة -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
     <button class="btn btn-primary" onclick="App.go('attendance')" style="flex:1;min-width:120px;justify-content:center;font-weight:700">✅ تسجيل الحضور</button>
-    <button class="btn" onclick="App.go('branchTasks')" style="flex:1;min-width:120px;justify-content:center;background:${expiringSoon>0?'#dc2626':'#f1f5f9'};color:${expiringSoon>0?'#fff':'#475569'};font-weight:700;border:none">📌 مهام التحصيل${expiringSoon>0?' ('+expiringSoon+')':''}</button>
+    ${_tierAllows('branchTasks')?`<button class="btn" onclick="App.go('branchTasks')" style="flex:1;min-width:120px;justify-content:center;background:${expiringSoon>0?'#dc2626':'#f1f5f9'};color:${expiringSoon>0?'#fff':'#475569'};font-weight:700;border:none">📌 مهام التحصيل${expiringSoon>0?' ('+expiringSoon+')':''}</button>`:''}
     <button class="btn" onclick="App.go('cashClosing')" style="flex:1;min-width:120px;justify-content:center;background:#f1f5f9;color:#475569;font-weight:700;border:none">💰 تقفيل الصندوق</button>
     <button class="btn" onclick="App.go('messages')" style="flex:1;min-width:120px;justify-content:center;background:${unreadMsgs>0?'#dc2626':'#f1f5f9'};color:${unreadMsgs>0?'#fff':'#475569'};font-weight:700;border:none;position:relative">
       💬 الرسائل${unreadMsgs>0?` <span style="background:#fff;color:#dc2626;border-radius:50%;padding:0 5px;font-size:11px;font-weight:900">${unreadMsgs}</span>`:''}
@@ -2082,7 +2122,7 @@ _schoolDash(){
       <div style="font-size:26px;font-weight:900">${notRecorded}</div>
       <div style="font-size:11px;opacity:.8;margin-top:3px">${lateCnt>0?lateCnt+' متأخر':notRecorded>0?'انقر للتسجيل':'الكل مسجّل ✅'}</div>
     </div>
-    <div style="background:${expiredSubs.length>0?'linear-gradient(135deg,#ef4444,#dc2626)':'#fff'};color:${expiredSubs.length>0?'#fff':'#1e293b'};border-radius:12px;padding:14px;border:2px solid ${expiredSubs.length>0?'transparent':'#e2e8f0'};cursor:pointer" onclick="App.go('branchTasks')">
+    <div style="background:${expiredSubs.length>0?'linear-gradient(135deg,#ef4444,#dc2626)':'#fff'};color:${expiredSubs.length>0?'#fff':'#1e293b'};border-radius:12px;padding:14px;border:2px solid ${expiredSubs.length>0?'transparent':'#e2e8f0'};cursor:pointer" onclick="App.go('${expiredTarget}')">
       <div style="font-size:10px;opacity:${expiredSubs.length>0?.85:.6};margin-bottom:4px">🔴 اشتراكات منتهية</div>
       <div style="font-size:26px;font-weight:900">${expiredSubs.length}</div>
       <div style="font-size:11px;opacity:.8;margin-top:3px">${expiringSoon>0?expiringSoon+' تنتهي قريباً':expiredSubs.length>0?'تحتاج تجديد':'لا يوجد منتهي ✅'}</div>
@@ -3049,6 +3089,35 @@ users(){
 // ---------- FORBIDDEN ----------
 _forbidden(){
   return `<div class="empty-state"><div class="es-icon">🔒</div><p>غير مصرح بالوصول لهذه الصفحة</p></div>`;
+},
+_premiumLocked(view){
+  const titles={schools:'المدارس المشتركة',branches:'الفروع',hr:'الموارد البشرية',govDocs:'الوثائق الحكومية',accounting:'المحاسبة',monthlyClose:'الإقفال الشهري',auditLog:'سجل النشاط',tasks:'مهام اليوم',branchTasks:'مهام التحصيل',branchReport:'تقرير الفروع'};
+  return `
+  <div class="card" style="max-width:520px;margin:40px auto;text-align:center;padding:36px 28px">
+    <div style="font-size:15px;font-weight:800;color:#0f766e;margin-bottom:10px">${titles[view]||'هذه الميزة'} — ضمن باقة "مدرسة"</div>
+    <p style="font-size:14px;color:#64748b;line-height:1.9;margin-bottom:20px">هذه الميزة متاحة لعضوية "مدرسة (كل المراحل)". عضويتكم الحالية لا تشملها.</p>
+    <button class="btn btn-primary" onclick="App.go('upgradeInfo')">التفاصيل والترقية</button>
+  </div>`;
+},
+upgradeInfo(){
+  const items=[
+    ['الفروع والمدارس المشتركة','إدارة أكثر من فرع/موقع من حساب واحد'],
+    ['الموارد البشرية','رواتب، بدلات، إجازات نظام العمل السعودي، مكافأة نهاية الخدمة'],
+    ['الوثائق الحكومية','متابعة تراخيص وشهادات المدرسة وتنبيهات انتهائها'],
+    ['المحاسبة والإقفال الشهري','تقارير مالية شاملة وإقفال شهري رسمي'],
+    ['سجل النشاط','سجل تدقيق كامل لكل عملية على الحساب'],
+    ['مهام اليوم ومهام التحصيل','متابعة مهام الإدارة وتحصيل المستحقات لكل فرع'],
+    ['تقرير مقارنة الفروع','مقارنة أداء كل فرع بالآخر'],
+  ];
+  return `
+  <div class="card" style="max-width:640px;margin:0 auto">
+    <div class="card-title">⭐ ميزات إضافية لعضوية "مدرسة (كل المراحل)"</div>
+    <p style="font-size:13px;color:#64748b;margin-bottom:18px">عضويتكم الحالية ${MEMBERSHIP_LABELS[TenantSession.tenant?.membershipType]||''} تشمل كل الأساسيات (الأطفال، الاشتراكات، الحضور، المبيعات، المصروفات، التقارير، الرسائل). الميزات التالية إضافية لعضوية المدرسة الكاملة:</p>
+    <ul class="lp-fd-bullets">
+      ${items.map(([t,d])=>`<li><b>✓</b> <strong>${t}</strong> — ${d}</li>`).join('')}
+    </ul>
+    <div class="alert-box alert-blue">للترقية، تواصلي مع مزوّد الخدمة (مدار) لتحديث نوع عضويتكم.</div>
+  </div>`;
 },
 
 // ---------- TEACHERS (school_admin only) ----------
@@ -7458,6 +7527,38 @@ function closeProviderModal(){
   const el=document.getElementById('pv-modal-root');
   if(el) el.innerHTML='';
 }
+function _pvLogoPick(input,tenantId){
+  const file=input.files[0];
+  if(!file) return;
+  if(file.size>2*1024*1024){toast('حجم الصورة يجب أن لا يتجاوز 2 ميجابايت','error');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    try{
+      await Provider.setTenantLogo(tenantId,ev.target.result);
+      const prev=document.getElementById('pv-logo-preview');
+      if(prev) prev.src=ev.target.result;
+      toast('✅ تم رفع شعار المدرسة');
+    }catch(e){
+      toast('⚠️ تعذّر رفع الشعار','error');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function pvAutoEndDate(){
+  const term=document.getElementById('pv-term')?.value;
+  const startEl=document.getElementById('pv-start');
+  const endEl=document.getElementById('pv-end');
+  if(!term||!startEl?.value||!endEl) return;
+  const addMonths=(dateStr,n)=>{
+    const d=new Date(dateStr+'T00:00:00');
+    d.setMonth(d.getMonth()+n);
+    d.setDate(d.getDate()-1); // آخر يوم مشمول بالمدة
+    return d.toISOString().slice(0,10);
+  };
+  if(term==='monthly') endEl.value=addMonths(startEl.value,1);
+  else if(term==='yearly') endEl.value=addMonths(startEl.value,12);
+  else if(term==='two_years') endEl.value=addMonths(startEl.value,24);
+}
 async function saveProviderTenant(id){
   const val=(sel)=>document.getElementById(sel)?.value?.trim();
   const payload={
@@ -7470,6 +7571,7 @@ async function saveProviderTenant(id){
     subStart:val('pv-start'),
     subEnd:val('pv-end'),
     status:val('pv-status'),
+    paymentMethod:val('pv-payment'),
   };
   const errEl=document.getElementById('pv-err');
   if(!payload.name){if(errEl){errEl.textContent='⚠️ اسم المدرسة مطلوب';errEl.style.display='flex';}return;}
