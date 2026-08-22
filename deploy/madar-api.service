@@ -1,0 +1,19 @@
+[Unit]
+Description=Madar API (data storage server)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/madar-new/server
+ExecStart=/usr/bin/node /var/www/madar-new/server/server.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+Environment=PORT=3010
+Environment=HOST=127.0.0.1
+Environment=DB_PATH=/var/www/madar-new/server/data.db
+# PLATFORM_TOKEN يُقرأ من /etc/madar-new-api.env (يُولَّد تلقائياً بواسطة setup.sh)
+EnvironmentFile=/etc/madar-new-api.env
+
+[Install]
+WantedBy=multi-user.target
