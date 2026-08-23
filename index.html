@@ -7,10 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>مدار — إدارة المدارس من مكان واحد</title>
-<!-- BUILD: 2026-08-23-v91 -->
+<!-- BUILD: 2026-08-23-v92 -->
 <script>
 (function(){
-  var BUILD='v91-20260823-1';
+  var BUILD='v92-20260823-2';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -1264,12 +1264,12 @@ function priceFor(branchId,periodKey,planId){
   return v===undefined?0:(+v||0);
 }
 
-const MEMBERSHIP_LABELS={nursery:'حضانة / دار ضيافة أطفال',kindergarten:'روضة أطفال',school:'مدرسة (كل المراحل)'};
+const MEMBERSHIP_LABELS={nursery:'دار ضيافة للأطفال',kindergarten:'روضة أطفال',school:'مدرسة'};
 const TERM_LABELS={monthly:'شهري',yearly:'سنة كاملة',two_years:'سنتان',term1:'الفصل الدراسي الأول',term2:'الفصل الدراسي الثاني',full_year:'العام الدراسي كاملاً',custom:'تواريخ محددة'};
 const PAYMENT_METHOD_LABELS={bank_transfer:'تحويل بنكي',cash:'نقداً',mada:'شبكة مدى',card:'بطاقة ائتمان',other:'أخرى'};
 
 // ميزات حصرية لعضوية "مدرسة" (بكل مراحلها) — لا تظهر لعضوية روضة/حضانة
-const TIER_PREMIUM_VIEWS=new Set(['schools','branches','hr','govDocs','accounting','monthlyClose','auditLog','tasks','branchTasks','branchReport']);
+const TIER_PREMIUM_VIEWS=new Set(['schools','branches','hr','govDocs','monthlyClose','auditLog','tasks','branchTasks','branchReport']);
 function _tierAllows(view){
   if(!TIER_PREMIUM_VIEWS.has(view)) return true;
   return (TenantSession.tenant?.membershipType)==='school';
@@ -1284,12 +1284,12 @@ const LP_ICONS={
   branches:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
 };
 const LP_FEATURES={
-  subs:{label:'الاشتراكات',title:'إدارة اشتراكات مرنة بالكامل',desc:'أنشئي باقات اشتراك حسب الفترة (صباحي/مسائي) والمدة (يومي/أسبوعي/شهري)، وتابعي كل اشتراك حتى تاريخ انتهائه.',bullets:['تنبيه تلقائي قبل انتهاء الاشتراك','تجديد وتمديد بضغطة واحدة','خصومات ورعاية خاصة لكل طفل'],visual:'subs'},
-  attend:{label:'الحضور والانصراف',title:'تحضير ذكي بالموقع والباركود',desc:'الموظفات يسجّلن حضورهن من الجوال بالموقع الجغرافي أو رمز سرّي، وأولياء الأمور يستلمون تنبيه فوري عند دخول وخروج أطفالهم.',bullets:['تسجيل حضور الموظفات بالموقع الجغرافي ورمز سرّي','بطاقة خروج بباركود لكل طفل','حساب التأخير والإجازات تلقائياً'],visual:'attend'},
-  acc:{label:'المحاسبة والفواتير',title:'محاسبة وفواتير جاهزة للامتثال',desc:'فواتير ضريبية متوافقة، تقارير مالية شهرية، وإقفال شهري يحفظ أرقامك بلا تدخّل يدوي.',bullets:['ضريبة القيمة المضافة تلقائياً','تقفيل الصندوق اليومي','تقارير أرباح وخسائر جاهزة'],visual:'acc'},
-  wa:{label:'تنبيهات واتساب',title:'تواصل تلقائي مع أولياء الأمور',desc:'رسائل واتساب جاهزة تُرسل تلقائياً عند اقتراب انتهاء الاشتراك أو تسجيل حضور الطفل — بدون متابعة يدوية.',bullets:['قوالب رسائل قابلة للتخصيص','تذكير تجديد قبل الانتهاء بأيام','إشعار فوري لولي الأمر'],visual:'wa'},
-  hr:{label:'الموارد البشرية',title:'ملفات موظفين كاملة',desc:'رواتب، بدلات، إجازات نظام العمل السعودي، ومكافأة نهاية الخدمة — محسوبة تلقائياً لكل موظفة.',bullets:['رصيد إجازات تراكمي تلقائي','حساب مكافأة نهاية الخدمة','ملف موظف قابل للطباعة'],visual:'hr'},
-  branches:{label:'فروع متعددة',title:'إدارة كل فروعك من مكان واحد',desc:'كل فرع بفتراته وموظفاته وأطفاله، وتقارير مقارنة بين الفروع للمدير العام.',bullets:['صلاحيات مستقلة لكل فرع','تقرير مقارنة أداء الفروع','نقل طفل بين الفروع بسهولة'],visual:'branches'},
+  subs:{label:'الطلاب والاشتراكات',title:'ملف كامل لكل طالب، واشتراك يدير نفسه',desc:'سجّلي الطالب مرة واحدة ويتولّى مدار الباقي: الباقة ومدّتها، تاريخ الاستحقاق، التذكير قبل الانتهاء، ثم التجديد. وأنتِ من يضع قواعد الرسوم وفتراتها — لا قوالب جاهزة تُفرض عليك.',bullets:['باقات رسوم تصمّمينها بنفسك: الاسم والمدة والسعر لكل فرع وفترة','تنبيه تلقائي قبل انتهاء كل اشتراك، وتجديد بضغطة واحدة','خصومات وحالات خاصة لكل طالب على حدة','ملف الطالب: بياناته ووليّ أمره وملاحظاته الصحية'],visual:'subs'},
+  attend:{label:'الحضور والانصراف',title:'حضور موثّق للطالب والموظفة بلا كشوف ورقية',desc:'الموظفة تسجّل حضورها من جوّالها بالموقع الجغرافي أو برمز سرّي، والطالب يُسلَّم لوليّ أمره ببطاقة خروج بباركود — وكل حركة تُسجَّل بوقتها ومكانها.',bullets:['تحضير الموظفات بالموقع الجغرافي أو الرمز السرّي','بطاقة خروج بباركود لكل طالب تمنع التسليم الخاطئ','احتساب التأخير والغياب والإجازات تلقائياً','كشوف حضور جاهزة للطباعة والتوقيع'],visual:'attend'},
+  acc:{label:'المالية والفوترة',title:'فاتورة ضريبية نظامية مع كل عملية',desc:'كل اشتراك أو عملية بيع تُنتج فاتورة ضريبية بصيغة هيئة الزكاة والضريبة والدخل، برمز QR وتسلسل رقمي لا ينقطع — ومعها صورة واضحة عن إيرادات مدرستك ومصروفاتها.',bullets:['فاتورة ضريبية مبسّطة ومعيارية برمز QR وفق اشتراطات الهيئة','إشعارات دائنة نظامية عند الاسترجاع أو الإلغاء','تقفيل صندوق يومي وإقفال شهري يحفظ أرقامك','تقارير إيرادات ومصروفات وأرباح جاهزة لمحاسبك'],visual:'acc'},
+  wa:{label:'التواصل مع الأسر',title:'وليّ الأمر يعرف كل شيء دون أن يتّصل',desc:'رسائل واتساب تُصاغ مرّة واحدة وتُرسل تلقائياً: تأكيد حضور، تذكير تجديد، إشعار بمبلغ متبقٍّ — بلغة مدرستك ونبرتها أنتِ.',bullets:['قوالب رسائل تكتبينها بنفسك وتُعبّأ ببيانات كل أسرة','تذكير التجديد قبل الانتهاء بالمدة التي تختارينها','متابعة المبالغ المتبقية دون إحراج أو مكالمات','سجلّ يحفظ ما أُرسل ولمن ومتى'],visual:'wa'},
+  hr:{label:'شؤون الموظفين',title:'من العقد إلى الراتب، وفق نظام العمل السعودي',desc:'ملف كامل لكل موظفة: عقدها ووثائقها وتواريخ انتهائها، رصيد إجازاتها، وراتبها آخر الشهر — محسوباً لا مكتوباً يدوياً.',bullets:['رصيد إجازات تراكمي وفق نظام العمل السعودي','احتساب مكافأة نهاية الخدمة تلقائياً','تنبيه قبل انتهاء العقود والإقامات والوثائق','مسيّر رواتب شهري جاهز للاعتماد'],visual:'hr'},
+  branches:{label:'الفروع والتقارير',title:'كل فروعك أمامك في شاشة واحدة',desc:'لكل فرع فتراته وموظفاته وطلابه وأسعاره، وللمدير العام تقرير يقارن بينها جميعاً — أيّ فرع ينمو، وأيّها يحتاج قراراً اليوم.',bullets:['صلاحيات مستقلة لكل فرع ومسؤوليه','أسعار وفترات دوام مختلفة لكل فرع','تقرير مقارنة أداء الفروع مالياً وتشغيلياً','نقل الطالب بين الفروع مع سجلّه كاملاً'],visual:'branches'},
 };
 
 async function tenantApiCall(path,opts={}){
@@ -1415,6 +1415,7 @@ const App = {
         {v:'sales',icon:'<i class="ic ic-bag"></i>',label:'المبيعات'},
         {v:'expenses',icon:'<i class="ic ic-wallet"></i>',label:'المصروفات'},
         {v:'accounting',icon:'<i class="ic ic-receipt"></i>',label:'المحاسبة'},
+        {v:'taxInvoices',icon:'<i class="ic ic-file"></i>',label:'الفواتير الضريبية'},
         {v:'monthlyClose',icon:'<i class="ic ic-lock"></i>',label:'الإقفال الشهري'},
         {v:'cashClosing',icon:'<i class="ic ic-money"></i>',label:'تقفيل الصندوق'},
       ]},
@@ -1474,8 +1475,8 @@ const App = {
     <div class="sidebar">
       <div class="sidebar-logo" style="text-align:center">
         <div style="background:rgba(255,255,255,.94);border-radius:11px;padding:6px 10px;display:inline-block;margin:0 auto 7px"><img src="${esc(DB.schools()[0]?.logoDataUrl||'logo-madar-mark.svg')}" alt="" style="width:72px;height:42px;object-fit:contain;display:block" onerror="this.parentNode.style.display='none'"></div>
-        <h1 style="font-size:16px">مدار</h1>
-        <p>إدارة المدارس من مكان واحد</p>
+        <h1 style="font-size:15px;line-height:1.4">${esc(DB.schools()[0]?.name||TenantSession.tenant?.name||'مدار')}</h1>
+        <p style="font-size:10.5px;opacity:.75">بواسطة مدار</p>
       </div>
       <div class="nav-section">
         ${(()=>{const u=Auth.user;const unreadMsg=u?DB.unreadInternalCount(u.id,u.role,Auth.branchId()):0;return visibleGroups.map(g=>{const head=g.label?`<div class="nav-label">${g.label}</div>`:'';const items=g.items.map(l=>{const isMsg=l.v==='messages';const dot=isMsg&&unreadMsg>0?`<span class="nav-msg-dot" title="${unreadMsg} رسالة غير مقروءة"></span>`:'';return `<div class="nav-item ${App.view===l.v?'active':''}" data-v="${l.v}" style="position:relative" onclick="App.go('${l.v}');closeSidebar()">${l.icon} ${l.label}${dot}</div>`;}).join('');return `<div class="nav-group">${head}${items}</div>`;}).join('')})()}
@@ -1597,6 +1598,7 @@ const App = {
     const role=Auth.user?.role;
     const guards={
       schools:()=>Auth.isSuperAdmin(),
+      taxInvoices:()=>Auth.isSuperAdmin()||Auth.isSchoolAdmin(),
       branches:()=>Auth.isSuperAdmin(),
       users:()=>Auth.isSuperAdmin(),
       children:()=>role!=='teacher',
@@ -1629,7 +1631,7 @@ const App = {
     const guard=guards[App.view];
     if(guard&&!guard()) return Views._forbidden();
     if(!_tierAllows(App.view)) return Views._premiumLocked(App.view);
-    const map={dashboard:Views.dashboard,schools:Views.schools,branches:Views.branches,children:Views.children,subscriptions:Views.subscriptions,reports:Views.reports,users:Views.users,attendance:Views.attendance,whatsapp:Views.whatsapp,my_reports:Views.myReports,myAttendance:Views.myAttendance,myLeaves:Views.myLeaves,teachers:Views.teachers,activities:Views.activities,sales:Views.sales,accounting:Views.accounting,monthlyClose:Views.monthlyClose,expenses:Views.expenses,tasks:Views.tasks,branchTasks:Views.branchTasks,cashClosing:Views.cashClosing,statement:Views.statement,auditLog:Views.auditLog,branchReport:Views.branchReport,childNotes:Views.childNotes,messages:Views.messages,settings:Views.settings,govDocs:Views.govDocs,hr:Views.hr,upgradeInfo:Views.upgradeInfo};
+    const map={dashboard:Views.dashboard,schools:Views.schools,branches:Views.branches,children:Views.children,subscriptions:Views.subscriptions,reports:Views.reports,users:Views.users,attendance:Views.attendance,whatsapp:Views.whatsapp,my_reports:Views.myReports,myAttendance:Views.myAttendance,myLeaves:Views.myLeaves,teachers:Views.teachers,activities:Views.activities,sales:Views.sales,accounting:Views.accounting,monthlyClose:Views.monthlyClose,expenses:Views.expenses,tasks:Views.tasks,branchTasks:Views.branchTasks,cashClosing:Views.cashClosing,statement:Views.statement,auditLog:Views.auditLog,branchReport:Views.branchReport,childNotes:Views.childNotes,messages:Views.messages,settings:Views.settings,taxInvoices:Views.taxInvoices,govDocs:Views.govDocs,hr:Views.hr,upgradeInfo:Views.upgradeInfo};
     const fn=map[App.view]||Views.dashboard;
     try{return fn();}
     catch(e){console.error('[CCS]',App.view,e);return `<div style="padding:32px;text-align:center"><div style="font-size:48px;margin-bottom:16px"><i class="ic ic-alert"></i></div><p style="color:#ef4444;font-size:16px;font-weight:700">خطأ في تحميل الصفحة: ${App.view}</p><pre style="background:#f1f5f9;padding:16px;border-radius:8px;font-size:12px;text-align:left;overflow:auto;max-width:600px;margin:16px auto">${e.message}\n${(e.stack||'').split('\n').slice(0,5).join('\n')}</pre><button class="btn btn-primary" onclick="App.go('dashboard')">العودة للرئيسية</button></div>`;}
@@ -1673,7 +1675,7 @@ platformGate(){
     ${Views._lpFeatures()}
     ${Views._lpTiers()}
     ${Views._lpCtaBand()}
-    <div class="lp-footer">© ${new Date().getFullYear()} مدار — إدارة المدارس من مكان واحد</div>
+    <div class="lp-footer">© ${new Date().getFullYear()} مدار — منصة إدارة المدارس ورياض الأطفال ودور الحضانة · فوترة إلكترونية متوافقة مع هيئة الزكاة والضريبة والدخل</div>
   </div>`;
 },
 _lpHeader(){
@@ -1697,13 +1699,13 @@ _lpHero(){
   return `
   <section class="lp-hero">
     <div class="lp-hero-text">
-      <span class="lp-eyebrow">منصة لإدارة المدارس ورياض الأطفال ودور الحضانة</span> <h1>إدارة مدرستك<br><span>سلسة، بسيطة، ومنظمة</span></h1>
-      <p>الاشتراكات، الحضور والانصراف، الفواتير والمحاسبة، وتنبيهات واتساب التلقائية — كل شيء في مكان واحد، لكل فروع مدرستك.</p>
+      <span class="lp-eyebrow">منصة سعودية لإدارة المدارس ورياض الأطفال ودور الحضانة</span> <h1>كل ما تحتاجه مدرستك<br><span>في منصة واحدة</span></h1>
+      <p>من تسجيل الطالب إلى الفاتورة الضريبية، ومن حضور المعلّمة إلى راتبها آخر الشهر — مدار يجمع إدارة منشأتك كاملةً في مكان واحد، بدل عشرة دفاتر وبرامج متفرّقة.</p>
       <div class="lp-hero-cta">
-        <button class="lp-btn-accent" onclick="openAuthModal('register')">سجّلي مدرستك الآن</button>
-        <button class="lp-btn-outline" onclick="openAuthModal('login')">تسجيل الدخول</button>
+        <button class="lp-btn-accent" onclick="openAuthModal('register')">ابدئي إدارة مدرستك</button>
+        <button class="lp-btn-outline" onclick="openAuthModal('login')">لدي حساب</button>
       </div>
-      <div class="lp-hero-trust">عضوية وبيانات مستقلة لكل مدرسة — <b>روضة</b> · <b>حضانة / دار ضيافة</b> · <b>مدرسة بكل مراحلها</b></div>
+      <div class="lp-hero-trust">قاعدة بيانات مستقلة ومعزولة لكل منشأة — <b>دار ضيافة للأطفال</b> · <b>روضة أطفال</b> · <b>مدرسة</b></div>
     </div>
     <div class="lp-mock">${Views._lpBrowserMock()}</div>
   </section>`;
@@ -1730,8 +1732,8 @@ _lpFeatures(){
   return `
   <section class="lp-features" id="features">
     <div class="lp-section-head">
-      <h2>كل ما تحتاجينه لإدارة مدرستك</h2>
-      <p>اختاري أي ميزة بالأسفل لمعرفة تفاصيلها</p>
+      <h2>إدارة متكاملة من أول يوم دراسي إلى آخره</h2>
+      <p>اضغطي على أي جانب من جوانب عمل مدرستك لتري كيف يديره مدار</p>
     </div>
     <div class="lp-features-grid">
       ${keys.map((k,i)=>`<div class="lp-feature-card ${i===0?'active':''}" id="lpt-${k}" onclick="lpShowFeature('${k}')">
@@ -1749,7 +1751,7 @@ _lpFeatureDetail(key){
     <h3>${f.title}</h3>
     <p>${f.desc}</p>
     <ul class="lp-fd-bullets">${f.bullets.map(b=>`<li><b>✓</b> ${b}</li>`).join('')}</ul>
-    <button class="lp-btn-accent" onclick="openAuthModal('register')">جرّبي الآن</button>
+    <button class="lp-btn-accent" onclick="openAuthModal('register')">ابدئي مجاناً</button>
   </div>
   <div class="lp-fd-visual">${Views._lpVisual(f.visual)}</div>`;
 },
@@ -1788,9 +1790,9 @@ _lpVisual(kind){
 },
 _lpStats(){
   const items=[
-    {ic:'building',n:'٣ أنواع عضوية',t:'روضة · حضانة ودار ضيافة · مدرسة بكل مراحلها'},
-    {ic:'lock',n:'بيانات معزولة',t:'كل مدرسة بقاعدة بيانات مستقلة لا يراها أحد غيرها'},
-    {ic:'refresh',n:'مزامنة لحظية',t:'كل جهاز يرى التحديث في نفس اللحظة'},
+    {ic:'grid',n:'منصة واحدة، لا برامج متفرّقة',t:'الطلاب والمالية والموظفون والتقارير في نظام واحد مترابط — كل رقم يغذّي الآخر بلا إدخال مكرّر.'},
+    {ic:'receipt',n:'فوترة متوافقة مع هيئة الزكاة والضريبة والدخل',t:'فاتورة ضريبية نظامية برمز QR وتسلسل لا ينقطع لكل عملية، مُهيّأة للربط مع منصة فاتورة.'},
+    {ic:'lock',n:'بياناتك ملكك وحدك',t:'قاعدة بيانات مستقلة تماماً لكل منشأة، ونسخ احتياطية يومية — ولا أحد يرى بياناتك.'},
   ];
   return `
   <section class="lp-stats">
@@ -1802,16 +1804,16 @@ _lpStats(){
 },
 _lpTiers(){
   const tiers=[
-    {k:'nursery',name:'حضانة / دار ضيافة',desc:'للأعمار الصغيرة ودور الضيافة اليومية',feats:['الأطفال والاشتراكات','الحضور والانصراف','الفواتير والمبيعات','تنبيهات واتساب','التقارير الأساسية']},
-    {k:'kindergarten',name:'روضة أطفال',desc:'لرياض الأطفال والمراحل التمهيدية',feats:['كل مزايا الحضانة','ملاحظات الأطفال','دليل الأنشطة','الرسائل الداخلية','تقارير موسّعة']},
-    {k:'school',name:'مدرسة بكل مراحلها',desc:'الباقة الكاملة — إدارة متكاملة وتحوّل رقمي شامل',best:true,
-     feats:['كل مزايا الروضة','فروع متعددة وتقرير مقارنة','الموارد البشرية والرواتب','المحاسبة والإقفال الشهري','الوثائق الحكومية','مهام التحصيل وسجل النشاط']},
+    {k:'nursery',name:'دار ضيافة للأطفال',desc:'للرعاية اليومية والأعمار الصغيرة',feats:['ملفات الأطفال والاشتراكات','الحضور والانصراف','الفواتير الضريبية والمبيعات','تنبيهات واتساب للأسر','التقارير اليومية والمالية']},
+    {k:'kindergarten',name:'روضة أطفال',desc:'لرياض الأطفال والمراحل التمهيدية',feats:['كل ما في باقة الحضانة','ملاحظات سلوكية وتربوية لكل طفل','دليل أنشطة جاهز للمعلّمات','رسائل داخلية بين الإدارة والمعلّمات','تقارير موسّعة لكل فصل ومعلّمة']},
+    {k:'school',name:'مدرسة',desc:'الباقة الكاملة — إدارة متكاملة وتحوّل رقمي شامل',best:true,
+     feats:['كل ما في باقة الروضة','فروع متعددة وتقرير يقارن بينها','شؤون الموظفين والرواتب ونهاية الخدمة','المحاسبة والإقفال الشهري','متابعة الوثائق الحكومية وتواريخ انتهائها','مهام التحصيل وسجلّ نشاط كامل']},
   ];
   return `
   <section class="lp-tiers" id="tiers">
     <div class="lp-section-head">
-      <h2>اختاري نوع عضويتك</h2>
-      <p>كل نوع عضوية يفتح المزايا المناسبة لحجم منشأتك — ومزوّد الخدمة يحدّدها لك عند التفعيل</p>
+      <h2>اختاري ما يناسب حجم منشأتك</h2>
+      <p>المنصة واحدة، وتُفتح المزايا بحسب نوع العضوية — نفعّلها لك عند تسجيلك ونجهّز بياناتك الأساسية معك</p>
     </div>
     <div class="lp-tier-grid">
       ${tiers.map(t=>`
@@ -1820,7 +1822,7 @@ _lpTiers(){
         <h3>${t.name}</h3>
         <p>${t.desc}</p>
         <ul>${t.feats.map(f=>`<li><i class="ic ic-check"></i> ${f}</li>`).join('')}</ul>
-        <button class="${t.best?'lp-btn-accent':'lp-btn-outline'}" onclick="openAuthModal('register')">سجّلي بهذه العضوية</button>
+        <button class="${t.best?'lp-btn-accent':'lp-btn-outline'}" onclick="openAuthModal('register')">ابدئي بهذه العضوية</button>
       </div>`).join('')}
     </div>
   </section>`;
@@ -1828,9 +1830,9 @@ _lpTiers(){
 _lpCtaBand(){
   return `
   <section class="lp-cta-band">
-    <h2>جاهزة تحوّلين مدرستك رقمياً؟</h2>
-    <p>سجّلي الآن، واختاري نوع العضوية المناسب — روضة، حضانة، أو مدرسة بكل مراحلها.</p>
-    <button class="lp-btn-accent" onclick="openAuthModal('register')">سجّلي مدرستك مجاناً</button>
+    <h2>مدرستك تستحقّ نظاماً واحداً، لا عشرة دفاتر</h2>
+    <p>سجّلي اليوم واختاري نوع عضويتك — ونتولّى تفعيل حسابك وتجهيز بياناتك الأساسية معك خطوة بخطوة.</p>
+    <button class="lp-btn-accent" onclick="openAuthModal('register')">ابدئي مع مدار</button>
   </section>`;
 },
 
@@ -1887,8 +1889,8 @@ _tenantRegisterForm(){
   <div class="input-group"><label>نوع العضوية المطلوب</label>
     <select class="input" id="tr-type">
       <option value="kindergarten">روضة أطفال</option>
-      <option value="nursery">حضانة / دار ضيافة أطفال (أصغر من الروضة)</option>
-      <option value="school">مدرسة بكل مراحلها</option>
+      <option value="nursery">دار ضيافة للأطفال</option>
+      <option value="school">مدرسة</option>
     </select>
     <div style="font-size:11px;color:#94a3b8;margin-top:4px">نهائياً يحدّده مزوّد الخدمة عند تفعيل الحساب</div>
   </div>
@@ -2012,7 +2014,8 @@ providerTenantForm(t){
     <div class="modal-header"><h2>${edit?'تعديل مدرسة':'إضافة مدرسة'}</h2><button class="close-btn" onclick="closeProviderModal()">✕</button></div>
     <div class="modal-body">
       <div id="pv-err" style="display:none;margin-bottom:16px" class="alert-box alert-red"></div>
-      <div class="input-group"><label>اسم المدرسة</label><input class="input" id="pv-name" value="${esc(t?.name||'')}"></div>
+      <div class="input-group"><label>اسم المدرسة</label><input class="input" id="pv-name" value="${esc(t?.name||'')}" placeholder="الاسم كما تريدينه أن يظهر للمدرسة">
+        <small style="color:#94a3b8;font-size:11px">هذا الاسم يظهر داخل نظام المدرسة وفي صفحة دخولها وعلى فواتيرها</small></div>
       ${edit?`
       <div class="input-group">
         <label>شعار المدرسة</label>
@@ -3328,7 +3331,7 @@ _premiumLocked(view){
   return `
   <div class="card" style="max-width:520px;margin:40px auto;text-align:center;padding:36px 28px">
     <div style="font-size:15px;font-weight:800;color:#1d4ed8;margin-bottom:10px">${titles[view]||'هذه الميزة'} — ضمن باقة "مدرسة"</div>
-    <p style="font-size:14px;color:#64748b;line-height:1.9;margin-bottom:20px">هذه الميزة متاحة لعضوية "مدرسة (كل المراحل)". عضويتكم الحالية لا تشملها.</p>
+    <p style="font-size:14px;color:#64748b;line-height:1.9;margin-bottom:20px">هذه الميزة متاحة لعضوية "مدرسة". عضويتكم الحالية لا تشملها.</p>
     <button class="btn btn-primary" onclick="App.go('upgradeInfo')">التفاصيل والترقية</button>
   </div>`;
 },
@@ -3344,7 +3347,7 @@ upgradeInfo(){
   ];
   return `
   <div class="card" style="max-width:640px;margin:0 auto">
-    <div class="card-title"><i class="ic ic-star"></i> ميزات إضافية لعضوية "مدرسة (كل المراحل)"</div>
+    <div class="card-title"><i class="ic ic-star"></i> ميزات إضافية لعضوية "مدرسة"</div>
     <p style="font-size:13px;color:#64748b;margin-bottom:18px">عضويتكم الحالية ${MEMBERSHIP_LABELS[TenantSession.tenant?.membershipType]||''} تشمل كل الأساسيات (الأطفال، الاشتراكات، الحضور، المبيعات، المصروفات، التقارير، الرسائل). الميزات التالية إضافية لعضوية المدرسة الكاملة:</p>
     <ul class="lp-fd-bullets">
       ${items.map(([t,d])=>`<li><b>✓</b> <strong>${t}</strong> — ${d}</li>`).join('')}
@@ -5271,6 +5274,74 @@ messages(){
   `;
 },
 
+// ---------- سجل الفواتير الضريبية ----------
+taxInvoices(){
+  if(!Auth.isSuperAdmin()&&!Auth.isSchoolAdmin()) return Views._forbidden();
+  const f=App.params?.tiType||'all';
+  const q=(App.params?.tiQ||'').trim();
+  let list=invoiceLedger().slice().reverse();
+  if(f==='388') list=list.filter(i=>i.typeCode==='388');
+  if(f==='381') list=list.filter(i=>i.typeCode==='381');
+  if(q) list=list.filter(i=>(i.invoiceNo||'').includes(q)||(i.buyer?.name||'').includes(q));
+  const all=invoiceLedger();
+  const inv=all.filter(i=>i.typeCode==='388');
+  const notes=all.filter(i=>i.typeCode==='381');
+  const sum=a=>Zatca.round(a.reduce((x,i)=>x+i.totals.gross,0));
+  const sumTax=a=>Zatca.round(a.reduce((x,i)=>x+i.totals.tax,0));
+  const net=Zatca.round(sum(inv)-sum(notes)), netTax=Zatca.round(sumTax(inv)-sumTax(notes));
+  const money=n=>Zatca.money(n).replace(/\B(?=(\d{3})+$)/,'');
+  const ready=zatcaReady();
+  return `
+  <div class="section-header">
+    <h2><i class="ic ic-receipt"></i> سجل الفواتير الضريبية</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-sm" onclick="exportTaxInvoicesCSV()"><i class="ic ic-download"></i> تصدير السجل</button>
+      ${Auth.isSuperAdmin()?`<button class="btn btn-secondary btn-sm" onclick="App.go('settings',{tab:'zatca'})"><i class="ic ic-settings"></i> إعدادات الفوترة</button>`:''}
+    </div>
+  </div>
+  ${ready?'':`<div class="alert-box alert-yellow" style="margin-bottom:16px"><i class="ic ic-alert"></i> بيانات المنشأة الضريبية غير مكتملة — الفواتير الصادرة الآن قد لا تُقبل عند الربط مع منصة فاتورة. ${Auth.isSuperAdmin()?'<a href="#" onclick="App.go(\'settings\',{tab:\'zatca\'});return false;" style="font-weight:700">أكمليها الآن</a>':''}</div>`}
+  <div class="stats-grid" style="margin-bottom:18px">
+    <div class="stat-card"><div class="stat-label"><i class="ic ic-file"></i> فواتير صادرة</div><div class="stat-value">${inv.length}</div></div>
+    <div class="stat-card"><div class="stat-label"><i class="ic ic-refresh"></i> إشعارات دائنة</div><div class="stat-value">${notes.length}</div></div>
+    <div class="stat-card"><div class="stat-label"><i class="ic ic-money"></i> صافي المبيعات شامل الضريبة</div><div class="stat-value">${money(net)} <small>ر.س</small></div></div>
+    <div class="stat-card"><div class="stat-label"><i class="ic ic-scale"></i> صافي ضريبة القيمة المضافة</div><div class="stat-value">${money(netTax)} <small>ر.س</small></div></div>
+  </div>
+  <div class="filters-bar">
+    <input class="input" style="max-width:240px" placeholder="بحث برقم الفاتورة أو اسم المشتري..." value="${esc(q)}"
+      oninput="App.go('taxInvoices',{...App.params,tiQ:this.value})">
+    <span class="chip ${f==='all'?'active':''}" onclick="App.go('taxInvoices',{...App.params,tiType:'all'})">الكل</span>
+    <span class="chip ${f==='388'?'active':''}" onclick="App.go('taxInvoices',{...App.params,tiType:'388'})">الفواتير</span>
+    <span class="chip ${f==='381'?'active':''}" onclick="App.go('taxInvoices',{...App.params,tiType:'381'})">الإشعارات الدائنة</span>
+  </div>
+  <div class="card">
+    <div class="table-wrap"><table>
+      <thead><tr><th>الرقم</th><th>النوع</th><th>التاريخ</th><th>المشتري</th><th>قبل الضريبة</th><th>الضريبة</th><th>الإجمالي</th><th>ICV</th><th>إجراءات</th></tr></thead>
+      <tbody>
+        ${list.length?list.map(i=>{
+          const note=i.typeCode==='381';
+          return `<tr>
+            <td><strong>${esc(i.invoiceNo)}</strong>${i.refInvoiceNo?`<br><small style="color:#94a3b8">مرجع: ${esc(i.refInvoiceNo)}</small>`:''}</td>
+            <td><span class="badge ${note?'badge-orange':'badge-blue'}" style="font-size:10px">${note?'إشعار دائن':(i.subtype==='0100000'?'فاتورة معيارية':'فاتورة مبسّطة')}</span></td>
+            <td style="font-size:12px">${esc(i.issueDate)}<br><small style="color:#94a3b8">${esc(i.issueTime)}</small></td>
+            <td style="font-size:12.5px">${esc(i.buyer?.name||'عميل نقدي')}</td>
+            <td class="num">${money(i.totals.net)}</td>
+            <td class="num">${money(i.totals.tax)}</td>
+            <td class="num" style="font-weight:700;color:${note?'#dc2626':'#1d4ed8'}">${note?'-':''}${money(i.totals.gross)}</td>
+            <td style="text-align:center;color:#94a3b8">${i.icv}</td>
+            <td style="white-space:nowrap">
+              <button class="btn btn-secondary btn-xs" onclick="reprintInvoice('${esc(i.invoiceNo)}')" title="عرض وطباعة"><i class="ic ic-printer"></i></button>
+              <button class="btn btn-secondary btn-xs" onclick="downloadInvoiceXML('${esc(i.invoiceNo)}')" title="تنزيل UBL 2.1"><i class="ic ic-download"></i></button>
+              ${!note?`<button class="btn btn-secondary btn-xs" onclick="openCreditNoteModal('${esc(i.invoiceNo)}')" title="إشعار دائن"><i class="ic ic-refresh"></i></button>`:''}
+            </td>
+          </tr>`;}).join(''):`<tr><td colspan="9"><div class="empty-state"><i class="ic ic-receipt ic-xl"></i><p>لا توجد فواتير صادرة بعد</p></div></td></tr>`}
+      </tbody>
+    </table></div>
+  </div>
+  <div style="margin-top:14px;font-size:11.5px;color:#94a3b8;line-height:1.9">
+    <i class="ic ic-lock"></i> الفواتير الصادرة سجلّ ثابت لا يُعدَّل ولا يُحذف — أي تصحيح يتم بإصدار إشعار دائن، كما يشترط نظام الفوترة الإلكترونية. يجب الاحتفاظ بالسجل ٦ سنوات على الأقل.
+  </div>`;
+},
+
 // ---------- SETTINGS (super admin only) ----------
 settings(){
   if(!Auth.isSuperAdmin()) return Views._forbidden();
@@ -5285,6 +5356,7 @@ settings(){
     {k:'center',icon:'<i class="ic ic-building"></i>',label:'المركز'},
     {k:'account',icon:'<i class="ic ic-user"></i>',label:'حسابي'},
     {k:'invoice',icon:'<i class="ic ic-file"></i>',label:'الفواتير'},
+    {k:'zatca',icon:'<i class="ic ic-receipt"></i>',label:'الفوترة الإلكترونية'},
     {k:'reminders',icon:'<i class="ic ic-bell"></i>',label:'التذكيرات'},
     {k:'data',icon:'<i class="ic ic-archive"></i>',label:'البيانات'},
   ];
@@ -5404,6 +5476,94 @@ settings(){
         <div class="input-group"><label>تأكيد كلمة المرور الجديدة</label><input class="input" type="password" id="sa-confirm-pass" placeholder="أعد كتابة كلمة المرور الجديدة"></div>
       </div>
       <button class="btn btn-primary" onclick="saveSettingsAccount()"><i class="ic ic-save"></i> حفظ الحساب</button>
+    </div>`;
+  } else if(tab==='zatca'){
+    const sp=sellerProfile(), A=sp.address, chk=zatcaReadiness();
+    const done=chk.filter(x=>x.ok).length;
+    const cat=s.vatCategory||'S';
+    const ledger=invoiceLedger();
+    const lastI=lastInvoice();
+    content=`
+    <div style="max-width:880px">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><i class="ic ic-check"></i> جاهزية الربط مع منصة «فاتورة»</div>
+        <div style="font-size:12.5px;color:#64748b;margin-bottom:14px">هذه البيانات إلزامية في كل فاتورة إلكترونية بحسب اشتراطات هيئة الزكاة والضريبة والدخل. أكمليها لتصبح فواتير مدرستك جاهزة للربط المباشر.</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="flex:1;height:9px;background:#e2e8f0;border-radius:6px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(done/chk.length*100)}%;background:${done===chk.length?'#059669':'#f59e0b'};transition:.3s"></div>
+          </div>
+          <b style="font-size:13px;color:${done===chk.length?'#059669':'#b45309'}">${done} / ${chk.length}</b>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px">
+          ${chk.map(c=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:${c.ok?'#166534':'#b45309'}">
+            <i class="ic ic-${c.ok?'check':'alert'}"></i> ${c.label}</div>`).join('')}
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><i class="ic ic-bank"></i> بيانات المنشأة الضريبية</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="input-group"><label>الرقم الضريبي (١٥ رقماً)</label>
+            <input class="input" id="z-vat" value="${esc(sp.vatNumber)}" placeholder="3xxxxxxxxxxxxx3" maxlength="15" inputmode="numeric">
+            <small style="color:${Zatca.validVat(sp.vatNumber)?'#059669':'#b45309'};font-size:11.5px">${Zatca.validVat(sp.vatNumber)?'رقم ضريبي صحيح الصيغة':'يجب أن يبدأ بـ٣ وينتهي بـ٣ ويتكوّن من ١٥ رقماً'}</small>
+          </div>
+          <div class="input-group"><label>رقم السجل التجاري (١٠ أرقام)</label>
+            <input class="input" id="z-cr" value="${esc(sp.crNumber)}" placeholder="1010xxxxxx" maxlength="10" inputmode="numeric">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><i class="ic ic-pin"></i> العنوان الوطني للمنشأة</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px">العنوان الوطني بصيغته الرسمية مطلوب في ملف الفاتورة (UBL) — انسخيه كما هو من بطاقة العنوان الوطني.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+          <div class="input-group"><label>رقم المبنى (٤ أرقام)</label><input class="input" id="z-bldg" value="${esc(A.buildingNumber)}" maxlength="4" inputmode="numeric" placeholder="1234"></div>
+          <div class="input-group"><label>اسم الشارع</label><input class="input" id="z-street" value="${esc(A.street)}" placeholder="طريق الملك عبدالعزيز"></div>
+          <div class="input-group"><label>الحي</label><input class="input" id="z-dist" value="${esc(A.district)}" placeholder="حي الياسمين"></div>
+          <div class="input-group"><label>المدينة</label><input class="input" id="z-city" value="${esc(A.city)}" placeholder="الرياض"></div>
+          <div class="input-group"><label>الرمز البريدي (٥ أرقام)</label><input class="input" id="z-zip" value="${esc(A.postalCode)}" maxlength="5" inputmode="numeric" placeholder="12345"></div>
+          <div class="input-group"><label>الرقم الإضافي (٤ أرقام)</label><input class="input" id="z-add" value="${esc(A.additionalNumber)}" maxlength="4" inputmode="numeric" placeholder="6789"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><i class="ic ic-scale"></i> المعالجة الضريبية للخدمة</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="input-group"><label>فئة الضريبة الافتراضية</label>
+            <select class="input" id="z-cat" onchange="_zCatChanged()">
+              ${Object.values(VAT_CATEGORIES).map(v=>`<option value="${v.code}" ${cat===v.code?'selected':''}>${v.code} — ${v.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="input-group" id="z-reason-wrap" style="display:${cat==='S'?'none':''}">
+            <label>سبب الإعفاء / النسبة الصفرية</label>
+            <select class="input" id="z-reason">
+              ${Object.entries(VAT_EXEMPTION_REASONS).map(([k,v])=>`<option value="${k}" ${s.vatExemptionReason===k?'selected':''}>${k} — ${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="alert-box alert-blue" style="font-size:12.5px;margin-top:6px"><i class="ic ic-bulb"></i>
+          التعليم الخاص في السعودية خاضع للنسبة الأساسية ١٥٪ افتراضياً. إن كانت خدمتك مؤهّلة للنسبة الصفرية للمواطنين، اختاري الفئة <b>Z</b> والسبب <b>VATEX-SA-EDU</b>. راجعي محاسبك قبل التغيير — الاختيار الخاطئ يُنشئ فروقات في الإقرار.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title"><i class="ic ic-link"></i> سلسلة الفواتير والربط</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px">
+          <div class="inv-row" style="display:block"><span style="font-size:11.5px;color:#64748b">عدد المستندات الصادرة</span><br><b style="font-size:18px">${ledger.length}</b></div>
+          <div class="inv-row" style="display:block"><span style="font-size:11.5px;color:#64748b">آخر عدّاد (ICV)</span><br><b style="font-size:18px">${lastI?lastI.icv:0}</b></div>
+          <div class="inv-row" style="display:block"><span style="font-size:11.5px;color:#64748b">آخر مستند</span><br><b style="font-size:14px">${lastI?esc(lastI.invoiceNo):'—'}</b></div>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:10px;color:#94a3b8;direction:ltr;word-break:break-all;line-height:1.8">
+          <b style="color:#64748b">آخر تجزئة (PIH):</b> ${esc(currentPIH())}
+        </div>
+        <div class="input-group" style="margin-top:14px"><label>بادئة رقم الإشعار الدائن</label>
+          <input class="input" id="z-cnprefix" value="${esc(s.creditPrefix||'CN')}" style="max-width:180px"></div>
+        <div class="alert-box alert-yellow" style="font-size:12.5px"><i class="ic ic-alert"></i>
+          <b>خطوة الربط المباشر:</b> بعد اكتمال البيانات أعلاه، يُسجَّل جهاز المدرسة لدى الهيئة للحصول على شهادة التوقيع (CSID) عبر منصة فاتورة، ثم تُرسَل الفواتير آلياً. الشهادة والمفتاح الخاص يُحفظان على الخادم لا في المتصفح — تواصلي مع مزوّد الخدمة لتفعيل هذه الخطوة لمدرستك.
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveSettingsZatca()"><i class="ic ic-save"></i> حفظ بيانات الفوترة الإلكترونية</button>
     </div>`;
   } else if(tab==='invoice'){
     const prefix=esc(s.invoicePrefix||'INV');
@@ -9203,6 +9363,39 @@ function saveSettingsAccount(){
   App.render();
 }
 
+function _zCatChanged(){
+  const c=document.getElementById('z-cat')?.value;
+  const w=document.getElementById('z-reason-wrap');
+  if(w) w.style.display=(c==='S')?'none':'';
+}
+function saveSettingsZatca(){
+  if(!Auth.isSuperAdmin()) return;
+  const g=id=>(document.getElementById(id)?.value||'').trim();
+  const vat=g('z-vat').replace(/\D/g,'');
+  const cr=g('z-cr').replace(/\D/g,'');
+  if(vat&&!Zatca.validVat(vat)){ toast('الرقم الضريبي يجب أن يتكوّن من ١٥ رقماً يبدأ بـ٣ وينتهي بـ٣','error'); return; }
+  if(cr&&!Zatca.validCr(cr)){ toast('رقم السجل التجاري يجب أن يتكوّن من ١٠ أرقام','error'); return; }
+  const s=DB.settings();
+  s.crNumber=cr;
+  s.nationalAddress={
+    buildingNumber:g('z-bldg').replace(/\D/g,''),
+    street:g('z-street'),
+    district:g('z-dist'),
+    city:g('z-city'),
+    postalCode:g('z-zip').replace(/\D/g,''),
+    additionalNumber:g('z-add').replace(/\D/g,''),
+    country:'SA',
+  };
+  s.vatCategory=g('z-cat')||'S';
+  s.vatExemptionReason=(s.vatCategory==='S')?'':(g('z-reason')||'');
+  if(s.vatCategory!=='S') s.vatRate=0;
+  s.creditPrefix=(g('z-cnprefix')||'CN').toUpperCase();
+  DB.saveSettings(s);
+  const schools=DB.schools();
+  if(schools[0]){ schools[0]={...schools[0],vatNumber:vat}; DB.save('schools',schools); }
+  showSettingsToast('تم حفظ بيانات الفوترة الإلكترونية');
+  App.refresh();
+}
 function saveSettingsInvoice(){
   if(!Auth.isSuperAdmin()) return;
   const s=DB.settings();
@@ -10651,32 +10844,571 @@ function toHijri(date){
   return `${hd} ${mo[hm-1]||''} ${hy}هـ`;
 }
 
-function generateZATCAQR(sellerName,vatNumber,timestamp,total,vatAmount){
-  function tlv(tag,val){
-    const b=new TextEncoder().encode(String(val));
-    const out=new Uint8Array(2+b.length);
-    out[0]=tag;out[1]=b.length;out.set(b,2);return out;
+// =========================================================
+//  مولّد رمز QR مضمّن (وضع البايت) — لا يعتمد على أي مصدر خارجي،
+//  لأن رمز الفاتورة الضريبية شرط نظامي ولا يجوز أن يسقط بانقطاع الشبكة.
+// =========================================================
+const QRGen=(function(){
+  const EC_M=0;
+  // عدد كلمات التصحيح لكل كتلة، وعدد الكتل — لمستوى M من الإصدار 1 إلى 40
+  const ECC_M=[10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const BLK_M=[1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const ALIGN=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]];
+  // GF(256) — كثير الحدود 0x11d
+  const EXP=new Uint8Array(512), LOG=new Uint8Array(256);
+  (function(){let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11d;}for(let i=255;i<512;i++)EXP[i]=EXP[i-255];})();
+  const mul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
+  function rsPoly(n){let p=[1];for(let i=0;i<n;i++){const q=[1,EXP[i]],r=new Array(p.length+1).fill(0);
+    for(let a=0;a<p.length;a++)for(let b=0;b<q.length;b++)r[a+b]^=mul(p[a],q[b]);p=r;}return p;}
+  function rsEncode(data,n){
+    const gen=rsPoly(n), res=new Uint8Array(data.length+n);
+    res.set(data);
+    for(let i=0;i<data.length;i++){
+      const c=res[i]; if(!c) continue;
+      for(let j=1;j<gen.length;j++) res[i+j]^=mul(gen[j],c);
+    }
+    return res.slice(data.length);
   }
-  const parts=[tlv(1,sellerName),tlv(2,vatNumber),tlv(3,timestamp),tlv(4,Number(total).toFixed(2)),tlv(5,Number(vatAmount).toFixed(2))];
-  let len=0;for(const p of parts)len+=p.length;
-  const merged=new Uint8Array(len);let off=0;for(const p of parts){merged.set(p,off);off+=p.length;}
-  let bin='';for(let i=0;i<merged.length;i++)bin+=String.fromCharCode(merged[i]);
-  return btoa(bin);
+  const TOTAL_CW=[26,44,70,100,134,172,196,242,292,346,404,466,532,581,655,733,815,901,991,1085,
+    1156,1258,1364,1474,1588,1706,1828,1921,2051,2185,2323,2465,2611,2761,2876,3034,3196,3362,3532,3706];
+  function totalCodewords(v){ return TOTAL_CW[v-1]; }
+  function capacityBytes(v){
+    const total=totalCodewords(v);
+    const ecc=ECC_M[v-1]*BLK_M[v-1];
+    const dataCw=total-ecc;
+    const lenBits=(v<10)?8:16;
+    return dataCw-Math.ceil((4+lenBits)/8);
+  }
+  function pickVersion(len){
+    for(let v=1;v<=40;v++) if(capacityBytes(v)>=len) return v;
+    throw new Error('QR: payload too large');
+  }
+  function buildData(bytes,v){
+    const total=totalCodewords(v), nb=BLK_M[v-1], ecPer=ECC_M[v-1];
+    const dataCw=total-ecPer*nb;
+    const bits=[];
+    const push=(val,n)=>{for(let i=n-1;i>=0;i--)bits.push((val>>i)&1);};
+    push(4,4);                                 // وضع البايت
+    push(bytes.length,(v<10)?8:16);
+    for(const b of bytes) push(b,8);
+    for(let i=0;i<4&&bits.length<dataCw*8;i++) bits.push(0);
+    while(bits.length%8) bits.push(0);
+    const cw=[]; for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];cw.push(b);}
+    const pad=[0xEC,0x11]; let k=0;
+    while(cw.length<dataCw) cw.push(pad[k++%2]);
+    // تقسيم إلى كتل (قصيرة ثم طويلة)
+    const shortLen=Math.floor(dataCw/nb), longCount=dataCw%nb;
+    const blocks=[],eccs=[]; let off=0;
+    for(let i=0;i<nb;i++){
+      const L=shortLen+(i>=nb-longCount?1:0);
+      const blk=Uint8Array.from(cw.slice(off,off+L)); off+=L;
+      blocks.push(blk); eccs.push(rsEncode(blk,ecPer));
+    }
+    const out=[];
+    const maxLen=Math.max(...blocks.map(b=>b.length));
+    for(let i=0;i<maxLen;i++) for(const b of blocks) if(i<b.length) out.push(b[i]);
+    for(let i=0;i<ecPer;i++) for(const e of eccs) out.push(e[i]);
+    return out;
+  }
+  function makeMatrix(v){
+    const n=v*4+17;
+    const m=Array.from({length:n},()=>new Int8Array(n).fill(-1));
+    const finder=(r,c)=>{for(let i=-1;i<=7;i++)for(let j=-1;j<=7;j++){
+      const y=r+i,x=c+j; if(y<0||x<0||y>=n||x>=n) continue;
+      const on=(i>=0&&i<=6&&(j===0||j===6))||(j>=0&&j<=6&&(i===0||i===6))||(i>=2&&i<=4&&j>=2&&j<=4);
+      m[y][x]=on?1:0;}};
+    finder(0,0); finder(0,n-7); finder(n-7,0);
+    const al=ALIGN[v-1];
+    for(const r of al) for(const c of al){
+      if((r<=7&&c<=7)||(r<=7&&c>=n-8)||(r>=n-8&&c<=7)) continue;
+      for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++)
+        m[r+i][c+j]=(Math.abs(i)===2||Math.abs(j)===2||(i===0&&j===0))?1:0;
+    }
+    for(let i=8;i<n-8;i++){ m[6][i]=(i%2===0)?1:0; m[i][6]=(i%2===0)?1:0; }
+    m[n-8][8]=1;                                       // الوحدة الداكنة
+    for(let i=0;i<9;i++){ if(m[8][i]===-1)m[8][i]=0; if(m[i][8]===-1)m[i][8]=0; }
+    for(let i=n-8;i<n;i++){ if(m[8][i]===-1)m[8][i]=0; }
+    for(let i=n-7;i<n;i++){ if(m[i][8]===-1)m[i][8]=0; }
+    if(v>=7){ for(let i=0;i<6;i++)for(let j=0;j<3;j++){ m[n-11+j][i]=0; m[i][n-11+j]=0; } }
+    return m;
+  }
+  function placeData(m,cw,v){
+    const n=m.length; let bit=0;
+    const total=cw.length*8;
+    const get=k=>k<total?((cw[k>>3]>>(7-(k&7)))&1):0;
+    let up=true;
+    for(let col=n-1;col>0;col-=2){
+      if(col===6) col=5;
+      for(let t=0;t<n;t++){
+        const row=up?n-1-t:t;
+        for(let c=0;c<2;c++){
+          const x=col-c;
+          if(m[row][x]!==-1) continue;
+          m[row][x]=get(bit++);
+        }
+      }
+      up=!up;
+    }
+  }
+  const MASKS=[(r,c)=>(r+c)%2===0,(r,c)=>r%2===0,(r,c)=>c%3===0,(r,c)=>(r+c)%3===0,
+    (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,(r,c)=>((r*c)%2)+((r*c)%3)===0,
+    (r,c)=>(((r*c)%2)+((r*c)%3))%2===0,(r,c)=>(((r+c)%2)+((r*c)%3))%2===0];
+  function penalty(g){
+    const n=g.length; let p=0;
+    const run=arr=>{let s=0,prev=-1;for(const v of arr){if(v===prev)s++;else{if(s>=5)p+=s-2;prev=v;s=1;}}if(s>=5)p+=s-2;};
+    for(let i=0;i<n;i++){ run(g[i]); run(g.map(r=>r[i])); }
+    for(let r=0;r<n-1;r++)for(let c=0;c<n-1;c++){const a=g[r][c];if(a===g[r][c+1]&&a===g[r+1][c]&&a===g[r+1][c+1])p+=3;}
+    const pat=[1,0,1,1,1,0,1,0,0,0,0], pat2=[0,0,0,0,1,0,1,1,1,0,1];
+    const has=(arr,i,pt)=>pt.every((v,k)=>arr[i+k]===v);
+    for(let i=0;i<n;i++){ const row=g[i], col=g.map(r=>r[i]);
+      for(let j=0;j+11<=n;j++){ if(has(row,j,pat)||has(row,j,pat2))p+=40; if(has(col,j,pat)||has(col,j,pat2))p+=40; } }
+    let dark=0; g.forEach(r=>r.forEach(v=>{if(v)dark++;}));
+    p+=Math.floor(Math.abs(dark*100/(n*n)-50)/5)*10;
+    return p;
+  }
+  const FMT_G=0x537;
+  function formatBits(ecBits,mask){
+    let d=((ecBits<<3)|mask)<<10, v=d;
+    for(let i=14;i>=10;i--) if((v>>i)&1) v^=FMT_G<<(i-10);
+    return (((ecBits<<3)|mask)<<10 | v) ^ 0x5412;
+  }
+  const VER_G=0x1F25;
+  function versionBits(v){
+    let d=v<<12, x=d;
+    for(let i=17;i>=12;i--) if((x>>i)&1) x^=VER_G<<(i-12);
+    return d|x;
+  }
+  function render(m,v,mask){
+    const n=m.length;
+    const g=m.map(r=>Array.from(r));
+    const reserved=makeMatrix(v);
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)
+      if(reserved[r][c]===-1&&MASKS[mask](r,c)) g[r][c]^=1;
+    const f=formatBits(0,mask);                  // مستوى التصحيح M = 00
+    for(let i=0;i<15;i++){
+      const b=(f>>(14-i))&1;                   // البتّات تُقرأ من الأعلى قيمةً
+      if(i<6) g[8][i]=b; else if(i===6) g[8][7]=b; else if(i===7) g[8][8]=b;
+      else if(i===8) g[7][8]=b; else g[14-i][8]=b;
+      if(i<7) g[n-1-i][8]=b; else g[8][n-15+i]=b;
+    }
+    g[n-8][8]=1;
+    if(v>=7){ const vb=versionBits(v);
+      for(let i=0;i<18;i++){ const b=(vb>>i)&1; const r=Math.floor(i/3), c=i%3;
+        g[n-11+c][r]=b; g[r][n-11+c]=b; } }
+    return g;
+  }
+  function encode(str){
+    const bytes=new TextEncoder().encode(str);
+    const v=pickVersion(bytes.length);
+    const cw=buildData(bytes,v);
+    const base=makeMatrix(v);
+    placeData(base,cw,v);
+    let best=null,bestP=Infinity;
+    for(let mk=0;mk<8;mk++){ const g=render(base,v,mk); const p=penalty(g); if(p<bestP){bestP=p;best=g;} }
+    return best;
+  }
+  function toDataURL(str,px){
+    const g=encode(str);
+    const n=g.length, quiet=4, scale=Math.max(2,Math.floor((px||200)/(n+quiet*2)));
+    const size=(n+quiet*2)*scale;
+    const cv=document.createElement('canvas'); cv.width=cv.height=size;
+    const x=cv.getContext('2d');
+    x.fillStyle='#fff'; x.fillRect(0,0,size,size);
+    x.fillStyle='#000';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++) if(g[r][c]) x.fillRect((c+quiet)*scale,(r+quiet)*scale,scale,scale);
+    return cv.toDataURL('image/png');
+  }
+  return {encode,toDataURL};
+})();
+
+// =========================================================
+//  الفوترة الإلكترونية — هيئة الزكاة والضريبة والدخل (ZATCA / فاتورة)
+//  مبني على: نظام الفوترة الإلكترونية، اللائحة التنفيذية لضريبة القيمة
+//  المضافة (المادة 53)، والمواصفة الفنية UBL 2.1 / EN 16931 السعودية.
+// =========================================================
+
+// فئات الضريبة المعتمدة (UN/ECE 5305) + أسباب الإعفاء السعودية
+const VAT_CATEGORIES={
+  S:{code:'S',name:'خاضعة للنسبة الأساسية',rate:15,needsReason:false},
+  Z:{code:'Z',name:'خاضعة لنسبة صفرية',rate:0,needsReason:true},
+  E:{code:'E',name:'معفاة من الضريبة',rate:0,needsReason:true},
+  O:{code:'O',name:'خارج نطاق الضريبة',rate:0,needsReason:true},
+};
+const VAT_EXEMPTION_REASONS={
+  'VATEX-SA-EDU':'الخدمات التعليمية الخاصة المقدَّمة للمواطنين',
+  'VATEX-SA-HEA':'الخدمات الصحية الخاصة المقدَّمة للمواطنين',
+  'VATEX-SA-29':'الخدمات المالية',
+  'VATEX-SA-30':'التعاملات العقارية',
+  'VATEX-SA-32':'التصدير خارج دول المجلس',
+  'VATEX-SA-33':'النقل الدولي',
+  'VATEX-SA-34-1':'وسائل النقل الدولي',
+  'VATEX-SA-35':'الأدوية والمعدات الطبية المؤهلة',
+  'VATEX-SA-36':'المعادن الاستثمارية المؤهلة',
+  'VATEX-SA-OOS':'خارج نطاق ضريبة القيمة المضافة',
+};
+// طرق الدفع — ترميز UN/CEFACT 4461 المطلوب في ملف الفاتورة
+const PAY_MEANS_CODES={cash:'10',mada:'48',card:'48',transfer:'42',bank_transfer:'42',cheque:'20',qurrah:'1',other:'1'};
+function payMeansCode(k){ return PAY_MEANS_CODES[k] || (payObj(k).zatcaCode) || '1'; }
+
+const Zatca={
+  // ── أدوات أساسية ─────────────────────────────────────────
+  // تقريب نصف لأعلى إلى منزلتين — ما تشترطه الهيئة في كل مبلغ
+  round(n){ const x=Number(n)||0; return Math.sign(x)*Math.round((Math.abs(x)+Number.EPSILON)*100)/100; },
+  money(n){ return this.round(n).toFixed(2); },
+  // ختم زمني ISO 8601 بصيغة Zulu بدون أجزاء الثانية (اشتراط الهيئة)
+  isoZ(d){ const t=(d instanceof Date?d:new Date(d||Date.now())); return t.toISOString().replace(/\.\d{3}Z$/,'Z'); },
+  dateOnly(d){ return this.isoZ(d).slice(0,10); },
+  timeOnly(d){ return this.isoZ(d).slice(11,19); },
+  // معرّف UUID نظامي (RFC 4122 v4) — الحقل cbc:UUID إلزامي وصالح شكلياً
+  uuid(){
+    if(crypto&&crypto.randomUUID) return crypto.randomUUID();
+    const b=new Uint8Array(16); (crypto&&crypto.getRandomValues?crypto:{getRandomValues:a=>{for(let i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256);return a;}}).getRandomValues(b);
+    b[6]=(b[6]&0x0f)|0x40; b[8]=(b[8]&0x3f)|0x80;
+    const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+  },
+  // الرقم الضريبي: 15 رقماً، يبدأ بـ3 وينتهي بـ3 (اشتراط الهيئة)
+  validVat(v){ return /^3\d{13}3$/.test(String(v||'').trim()); },
+  // السجل التجاري: 10 أرقام
+  validCr(v){ return /^\d{10}$/.test(String(v||'').trim()); },
+
+  // ── رمز الاستجابة السريعة (TLV → Base64) ─────────────────
+  // Tag/Length/Value بطول بايت واحد — القيم الأطول من 255 بايت تُقصَّر
+  tlv(tag,val){
+    let b=new TextEncoder().encode(String(val==null?'':val));
+    if(b.length>255) b=b.slice(0,255);
+    const out=new Uint8Array(2+b.length);
+    out[0]=tag; out[1]=b.length; out.set(b,2);
+    return out;
+  },
+  // f = {sellerName, vatNumber, timestamp, total, vatAmount, hash?, signature?, publicKey?}
+  qrBase64(f){
+    const parts=[
+      this.tlv(1,f.sellerName), this.tlv(2,f.vatNumber), this.tlv(3,f.timestamp),
+      this.tlv(4,this.money(f.total)), this.tlv(5,this.money(f.vatAmount)),
+    ];
+    // الوسوم 6–8 مطلوبة في المرحلة الثانية (الربط) وتُضاف متى توفّرت
+    if(f.hash) parts.push(this.tlv(6,f.hash));
+    if(f.signature) parts.push(this.tlv(7,f.signature));
+    if(f.publicKey) parts.push(this.tlv(8,f.publicKey));
+    let len=0; parts.forEach(p=>len+=p.length);
+    const m=new Uint8Array(len); let o=0; parts.forEach(p=>{m.set(p,o);o+=p.length;});
+    let bin=''; for(let i=0;i<m.length;i++) bin+=String.fromCharCode(m[i]);
+    return btoa(bin);
+  },
+  async sha256B64(str){
+    try{
+      const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+      let bin=''; const v=new Uint8Array(buf);
+      for(let i=0;i<v.length;i++) bin+=String.fromCharCode(v[i]);
+      return btoa(bin);
+    }catch(e){ return ''; }
+  },
+  // تجزئة الفاتورة السابقة — أول فاتورة تأخذ تجزئة الصفر التي تحدّدها الهيئة
+  GENESIS_PIH:'NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ZjEwOWVjMTgxMmQ0ZTE1NDkwMjhkNzhkODhjNTU4NGM4YTM5ZTFiNjRkYg==',
+};
+
+
+// ── بيانات المنشأة البائعة كما تشترطها الهيئة ────────────────
+function sellerProfile(){
+  const sc=DB.schools()[0]||{};
+  const s=DB.settings();
+  const a=s.nationalAddress||{};
+  return {
+    name:sc.name||'',
+    vatNumber:(sc.vatNumber||'').trim(),
+    crNumber:(s.crNumber||'').trim(),
+    phone:sc.phone||'', email:sc.email||'',
+    address:{
+      street:a.street||'', buildingNumber:a.buildingNumber||'', additionalNumber:a.additionalNumber||'',
+      district:a.district||'', city:a.city||'', postalCode:a.postalCode||'', country:'SA',
+      free:sc.address||'',
+    },
+  };
+}
+// قائمة تحقق الجاهزية للربط مع منصة فاتورة
+function zatcaReadiness(){
+  const sp=sellerProfile(), a=sp.address, s=DB.settings();
+  return [
+    {k:'name',  ok:!!sp.name,                       label:'اسم المنشأة كما في السجل التجاري'},
+    {k:'vat',   ok:Zatca.validVat(sp.vatNumber),    label:'الرقم الضريبي (١٥ رقماً يبدأ بـ٣ وينتهي بـ٣)'},
+    {k:'cr',    ok:Zatca.validCr(sp.crNumber),      label:'رقم السجل التجاري (١٠ أرقام)'},
+    {k:'bldg',  ok:/^\d{4}$/.test(a.buildingNumber),label:'رقم المبنى (٤ أرقام) — العنوان الوطني'},
+    {k:'street',ok:!!a.street,                      label:'اسم الشارع'},
+    {k:'dist',  ok:!!a.district,                    label:'الحي'},
+    {k:'city',  ok:!!a.city,                        label:'المدينة'},
+    {k:'zip',   ok:/^\d{5}$/.test(a.postalCode),    label:'الرمز البريدي (٥ أرقام)'},
+    {k:'add',   ok:/^\d{4}$/.test(a.additionalNumber),label:'الرقم الإضافي (٤ أرقام)'},
+    {k:'vatcat',ok:!!s.vatCategory,                 label:'فئة الضريبة الافتراضية'},
+  ];
+}
+function zatcaReady(){ return zatcaReadiness().every(x=>x.ok); }
+
+// ── عدّاد الفواتير (ICV) وسلسلة التجزئة (PIH) ─────────────────
+function invoiceLedger(){ return DB.get('invoices')||[]; }
+function lastInvoice(){ const l=invoiceLedger(); return l.length?l[l.length-1]:null; }
+function nextICV(){ const li=lastInvoice(); return (li?(+li.icv||0):0)+1; }
+function currentPIH(){ const li=lastInvoice(); return (li&&li.hash)?li.hash:Zatca.GENESIS_PIH; }
+function nextInvoiceNo(typeCode){
+  const s=DB.settings();
+  const prefix=(typeCode==='381'?(s.creditPrefix||'CN'):(s.invoicePrefix||'INV'));
+  const same=invoiceLedger().filter(i=>i.typeCode===typeCode);
+  const maxN=same.reduce((m,i)=>{const n=parseInt(String(i.invoiceNo||'').replace(/^[A-Za-z]+-/,''));return isNaN(n)?m:Math.max(m,n);},0);
+  return prefix+'-'+(maxN+1).toString().padStart(5,'0');
 }
 
+// ── بناء سطور الفاتورة من اشتراك ─────────────────────────────
+function lineFromAmounts(name,grossOrNet,cat,rate,inclusive,qty){
+  const q=qty||1;
+  let net,tax;
+  if(inclusive){ net=Zatca.round(grossOrNet/(1+rate/100)); tax=Zatca.round(grossOrNet-net); }
+  else{ net=Zatca.round(grossOrNet); tax=Zatca.round(net*rate/100); }
+  return {name,quantity:q,unitPrice:Zatca.round(net/q),netAmount:net,taxCategory:cat,taxRate:rate,taxAmount:tax,grossAmount:Zatca.round(net+tax)};
+}
+
+// ── إصدار فاتورة نظامية وتخزينها كسجل ثابت ───────────────────
+// opts: {typeCode, subtype, lines, buyer, paymentMethod, supplyDate, supplyEndDate,
+//        prepaidAmount, note, refInvoiceNo, sourceType, sourceId}
+async function issueInvoice(opts){
+  const s=DB.settings();
+  const seller=sellerProfile();
+  const now=new Date();
+  const typeCode=opts.typeCode||'388';
+  const buyer=opts.buyer||{};
+  // نوع الفاتورة: معيارية إذا كان للمشتري رقم ضريبي، وإلا مبسّطة
+  const subtype=opts.subtype||(Zatca.validVat(buyer.vatNumber)?'0100000':'0200000');
+  const lines=(opts.lines||[]).map((l,i)=>({...l,index:i+1}));
+  const netTotal=Zatca.round(lines.reduce((a,l)=>a+l.netAmount,0));
+  const taxTotal=Zatca.round(lines.reduce((a,l)=>a+l.taxAmount,0));
+  const grossTotal=Zatca.round(netTotal+taxTotal);
+  const prepaid=Zatca.round(opts.prepaidAmount||0);
+
+  const inv={
+    id:uid(),
+    uuid:Zatca.uuid(),
+    icv:nextICV(),
+    pih:currentPIH(),
+    hash:'',
+    invoiceNo:opts.invoiceNo||nextInvoiceNo(typeCode),
+    typeCode,                       // 388 فاتورة · 381 إشعار دائن · 383 إشعار مدين
+    subtype,                        // 0100000 معيارية · 0200000 مبسّطة
+    issueDate:Zatca.dateOnly(now),
+    issueTime:Zatca.timeOnly(now),
+    issuedAt:Zatca.isoZ(now),
+    supplyDate:opts.supplyDate||Zatca.dateOnly(now),
+    supplyEndDate:opts.supplyEndDate||'',
+    currency:'SAR',
+    seller,
+    buyer:{name:buyer.name||'',vatNumber:(buyer.vatNumber||'').trim(),phone:buyer.phone||'',address:buyer.address||{}},
+    lines,
+    totals:{net:netTotal,tax:taxTotal,gross:grossTotal,prepaid,payable:Zatca.round(grossTotal-prepaid)},
+    paymentMethod:opts.paymentMethod||'',
+    paymentMeansCode:payMeansCode(opts.paymentMethod),
+    note:opts.note||'',
+    refInvoiceNo:opts.refInvoiceNo||'',   // إلزامي للإشعارات الدائنة/المدينة
+    reasonCode:opts.reasonCode||'',
+    sourceType:opts.sourceType||'',       // subscription | sale | manual
+    sourceId:opts.sourceId||'',
+    issuedBy:Auth.user?.name||'',
+    branchId:opts.branchId||'',
+    createdAt:new Date().toISOString(),
+  };
+  // التجزئة تُحسب على ملف UBL المُقنَّن، وتصبح PIH للفاتورة التالية
+  inv.xml=buildUBL(inv);
+  inv.hash=await Zatca.sha256B64(inv.xml.replace(/>\s+</g,'><').trim());
+  inv.qr=Zatca.qrBase64({sellerName:seller.name,vatNumber:seller.vatNumber,timestamp:inv.issuedAt,
+                         total:inv.totals.gross,vatAmount:inv.totals.tax,hash:inv.hash});
+  const ledger=invoiceLedger();
+  ledger.push(inv);
+  DB.save('invoices',ledger);
+  return inv;
+}
+function findInvoice(idOrNo){
+  return invoiceLedger().find(i=>i.id===idOrNo||i.uuid===idOrNo||i.invoiceNo===idOrNo)||null;
+}
+function invoiceForSource(sourceType,sourceId){
+  return invoiceLedger().filter(i=>i.sourceType===sourceType&&i.sourceId===sourceId&&i.typeCode==='388').pop()||null;
+}
+
+// ── مولّد ملف UBL 2.1 (المواصفة السعودية) ─────────────────────
+function buildUBL(inv){
+  const x=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const m=n=>Zatca.money(n);
+  const S=inv.seller, B=inv.buyer, A=S.address;
+  const catOf=l=>VAT_CATEGORIES[l.taxCategory]||VAT_CATEGORIES.S;
+  // تجميع الضريبة حسب الفئة والنسبة
+  const groups={};
+  inv.lines.forEach(l=>{
+    const k=l.taxCategory+'|'+l.taxRate;
+    if(!groups[k]) groups[k]={cat:l.taxCategory,rate:l.taxRate,net:0,tax:0,reason:l.exemptionReason||''};
+    groups[k].net=Zatca.round(groups[k].net+l.netAmount);
+    groups[k].tax=Zatca.round(groups[k].tax+l.taxAmount);
+  });
+  const taxSubtotals=Object.values(groups).map(g=>`
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="SAR">${m(g.net)}</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="SAR">${m(g.tax)}</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID schemeID="UN/ECE 5305" schemeAgencyID="6">${g.cat}</cbc:ID>
+        <cbc:Percent>${Number(g.rate).toFixed(2)}</cbc:Percent>
+        ${g.cat!=='S'?`<cbc:TaxExemptionReasonCode>${x(g.reason||'VATEX-SA-OOS')}</cbc:TaxExemptionReasonCode>
+        <cbc:TaxExemptionReason>${x(VAT_EXEMPTION_REASONS[g.reason]||'')}</cbc:TaxExemptionReason>`:''}
+        <cac:TaxScheme><cbc:ID schemeID="UN/ECE 5153" schemeAgencyID="6">VAT</cbc:ID></cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>`).join('');
+  const lines=inv.lines.map(l=>`
+  <cac:InvoiceLine>
+    <cbc:ID>${l.index}</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="PCE">${Number(l.quantity||1).toFixed(6)}</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="SAR">${m(l.netAmount)}</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="SAR">${m(l.taxAmount)}</cbc:TaxAmount>
+      <cbc:RoundingAmount currencyID="SAR">${m(l.grossAmount)}</cbc:RoundingAmount>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>${x(l.name)}</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID schemeID="UN/ECE 5305" schemeAgencyID="6">${l.taxCategory}</cbc:ID>
+        <cbc:Percent>${Number(l.taxRate).toFixed(2)}</cbc:Percent>
+        <cac:TaxScheme><cbc:ID schemeID="UN/ECE 5153" schemeAgencyID="6">VAT</cbc:ID></cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price><cbc:PriceAmount currencyID="SAR">${m(l.unitPrice)}</cbc:PriceAmount></cac:Price>
+  </cac:InvoiceLine>`).join('');
+  const isNote=inv.typeCode!=='388';
+  const root=isNote?'CreditNote':'Invoice';
+  const ns=isNote
+    ?'urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2'
+    :'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2';
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<${root} xmlns="${ns}"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+  xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+  <cbc:ProfileID>reporting:1.0</cbc:ProfileID>
+  <cbc:ID>${x(inv.invoiceNo)}</cbc:ID>
+  <cbc:UUID>${x(inv.uuid)}</cbc:UUID>
+  <cbc:IssueDate>${x(inv.issueDate)}</cbc:IssueDate>
+  <cbc:IssueTime>${x(inv.issueTime)}</cbc:IssueTime>
+  <cbc:${isNote?'CreditNoteTypeCode':'InvoiceTypeCode'} name="${x(inv.subtype)}">${x(inv.typeCode)}</cbc:${isNote?'CreditNoteTypeCode':'InvoiceTypeCode'}>
+  ${inv.note?`<cbc:Note languageID="ar">${x(inv.note)}</cbc:Note>`:''}
+  <cbc:DocumentCurrencyCode>SAR</cbc:DocumentCurrencyCode>
+  <cbc:TaxCurrencyCode>SAR</cbc:TaxCurrencyCode>
+  ${isNote&&inv.refInvoiceNo?`<cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>${x(inv.refInvoiceNo)}</cbc:ID></cac:InvoiceDocumentReference></cac:BillingReference>`:''}
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>ICV</cbc:ID><cbc:UUID>${inv.icv}</cbc:UUID>
+  </cac:AdditionalDocumentReference>
+  <cac:AdditionalDocumentReference>
+    <cbc:ID>PIH</cbc:ID>
+    <cac:Attachment><cbc:EmbeddedDocumentBinaryObject mimeCode="text/plain">${x(inv.pih)}</cbc:EmbeddedDocumentBinaryObject></cac:Attachment>
+  </cac:AdditionalDocumentReference>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification><cbc:ID schemeID="CRN">${x(S.crNumber)}</cbc:ID></cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:StreetName>${x(A.street)}</cbc:StreetName>
+        <cbc:BuildingNumber>${x(A.buildingNumber)}</cbc:BuildingNumber>
+        <cbc:PlotIdentification>${x(A.additionalNumber)}</cbc:PlotIdentification>
+        <cbc:CitySubdivisionName>${x(A.district)}</cbc:CitySubdivisionName>
+        <cbc:CityName>${x(A.city)}</cbc:CityName>
+        <cbc:PostalZone>${x(A.postalCode)}</cbc:PostalZone>
+        <cac:Country><cbc:IdentificationCode>SA</cbc:IdentificationCode></cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>${x(S.vatNumber)}</cbc:CompanyID>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:PartyLegalEntity><cbc:RegistrationName>${x(S.name)}</cbc:RegistrationName></cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      ${B.vatNumber?`<cac:PartyTaxScheme><cbc:CompanyID>${x(B.vatNumber)}</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme>`:''}
+      <cac:PartyLegalEntity><cbc:RegistrationName>${x(B.name||'عميل نقدي')}</cbc:RegistrationName></cac:PartyLegalEntity>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:Delivery><cbc:ActualDeliveryDate>${x(inv.supplyDate)}</cbc:ActualDeliveryDate>${inv.supplyEndDate?`<cbc:LatestDeliveryDate>${x(inv.supplyEndDate)}</cbc:LatestDeliveryDate>`:''}</cac:Delivery>
+  <cac:PaymentMeans><cbc:PaymentMeansCode>${x(inv.paymentMeansCode)}</cbc:PaymentMeansCode>${isNote?`<cbc:InstructionNote>${x(inv.note||'إشعار دائن')}</cbc:InstructionNote>`:''}</cac:PaymentMeans>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="SAR">${m(inv.totals.tax)}</cbc:TaxAmount>${taxSubtotals}
+  </cac:TaxTotal>
+  <cac:TaxTotal><cbc:TaxAmount currencyID="SAR">${m(inv.totals.tax)}</cbc:TaxAmount></cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="SAR">${m(inv.totals.net)}</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="SAR">${m(inv.totals.net)}</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="SAR">${m(inv.totals.gross)}</cbc:TaxInclusiveAmount>
+    <cbc:PrepaidAmount currencyID="SAR">${m(inv.totals.prepaid)}</cbc:PrepaidAmount>
+    <cbc:PayableAmount currencyID="SAR">${m(inv.totals.payable)}</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>${lines}
+</${root}>`;
+}
+async function reprintInvoice(no){
+  const inv=findInvoice(no);
+  if(!inv){ toast('لم يتم العثور على الفاتورة','error'); return; }
+  let ctx={};
+  if(inv.sourceType==='subscription'){
+    const sub=DB.subscriptions().find(x=>x.id===inv.sourceId);
+    if(sub){ const c=DB.children().find(y=>y.id===sub.childId)||{};
+      ctx={childName:c.name,branchName:DB.branchName(sub.branchId),
+           subPeriod:(sub.startDate&&sub.endDate)?[sub.startDate,sub.endDate]:null}; }
+  }
+  await renderInvoiceDoc(inv,ctx);
+}
+function exportTaxInvoicesCSV(){
+  const rows=invoiceLedger().map(i=>({
+    'رقم المستند':i.invoiceNo,
+    'النوع':i.typeCode==='381'?'إشعار دائن':'فاتورة',
+    'التصنيف':i.subtype==='0100000'?'معيارية':'مبسّطة',
+    'مرجع':i.refInvoiceNo||'',
+    'التاريخ':i.issueDate,'الوقت':i.issueTime,
+    'المشتري':i.buyer?.name||'',
+    'الرقم الضريبي للمشتري':i.buyer?.vatNumber||'',
+    'قبل الضريبة':Zatca.money(i.totals.net),
+    'الضريبة':Zatca.money(i.totals.tax),
+    'الإجمالي':Zatca.money(i.totals.gross),
+    'طريقة الدفع':payName(i.paymentMethod),
+    'ICV':i.icv,'UUID':i.uuid,'التجزئة':i.hash,
+  }));
+  if(!rows.length){ toast('لا توجد فواتير للتصدير','warn'); return; }
+  const head=Object.keys(rows[0]);
+  const csv='﻿'+[head.join(','),...rows.map(r=>head.map(h=>`"${String(r[h]??'').replace(/"/g,'""')}"`).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='سجل-الفواتير-الضريبية.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  toast('<i class="ic ic-download"></i> تم تصدير سجل الفواتير');
+}
+function downloadInvoiceXML(idOrNo){
+  const inv=findInvoice(idOrNo);
+  if(!inv){ toast('لم يتم العثور على الفاتورة','error'); return; }
+  const xml=inv.xml||buildUBL(inv);
+  const blob=new Blob([xml],{type:'application/xml;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=inv.invoiceNo+'.xml';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  toast('<i class="ic ic-download"></i> تم تنزيل ملف الفاتورة UBL 2.1');
+}
+
+
 function getQRDataURL(text){
+  if(!text) return Promise.resolve('');
+  // المولّد المضمّن أولاً — لا يعتمد على الشبكة، ورمز الفاتورة شرط نظامي
+  try{ return Promise.resolve(QRGen.toDataURL(text,200)); }catch(e){}
+  // احتياطي: المكتبة الخارجية إن كانت محمّلة
   return new Promise(resolve=>{
     if(typeof QRCode==='undefined'){resolve('');return;}
     const div=document.createElement('div');
     div.style.cssText='position:absolute;top:-9999px;left:-9999px;width:200px';
     document.body.appendChild(div);
     try{new QRCode(div,{text,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});}
-    catch(e){try{document.body.removeChild(div);}catch{}resolve('');return;}
+    catch(e){try{document.body.removeChild(div);}catch(_){}resolve('');return;}
     setTimeout(()=>{
-      const canvas=div.querySelector('canvas');
-      const img=div.querySelector('img');
+      const canvas=div.querySelector('canvas'), img=div.querySelector('img');
       const src=canvas?.toDataURL('image/png')||img?.src||'';
-      try{document.body.removeChild(div);}catch{}
+      try{document.body.removeChild(div);}catch(_){}
       resolve(src);
     },350);
   });
@@ -10686,230 +11418,285 @@ async function openInvoice(subId){
   const sub=DB.subscriptions().find(s=>s.id===subId);
   if(!sub){alert('لم يتم العثور على الاشتراك');return;}
   const child=DB.children().find(c=>c.id===sub.childId)||{};
-  const school=DB.schools().find(s=>s.id===sub.schoolId)||DB.schools()[0]||{};
   const branch=DB.branches().find(b=>b.id===sub.branchId)||{};
   const cfg=DB.settings();
 
-  // ── VAT calculation ──────────────────────────────────────
-  const vr=(cfg.vatRate||15)/100;
-  const vinc=cfg.vatInclusive!==false;
-  const price=Number(sub.price)||0;
-  const paid=Number(sub.paidAmount)||0;
-  let base,vat,total;
-  if(vinc){total=price;base=Math.round(price/(1+vr)*100)/100;vat=Math.round((total-base)*100)/100;}
-  else{base=price;vat=Math.round(price*vr*100)/100;total=Math.round((base+vat)*100)/100;}
-  const remaining=Math.max(0,Math.round((total-paid)*100)/100);
+  // فاتورة الاشتراك تُصدَر مرة واحدة وتُحفَظ كسجل ثابت لا يتغيّر بعدها
+  let inv=invoiceForSource('subscription',sub.id);
+  if(!inv){
+    const cat=cfg.vatCategory||'S';
+    const rate=(cat==='S')?(Number(cfg.vatRate)||15):0;
+    const inclusive=cfg.vatInclusive!==false;
+    const line=lineFromAmounts(
+      `اشتراك ${planName(sub.type)} — ${periodName(sub.period)} · ${child.name||''}`,
+      Number(sub.price)||0, cat, rate, inclusive, 1);
+    line.exemptionReason=cfg.vatExemptionReason||'';
+    inv=await issueInvoice({
+      typeCode:'388',
+      lines:[line],
+      buyer:{name:child.parentName||child.name||'',vatNumber:(child.parentVatNumber||'').trim(),phone:child.parentPhone||''},
+      paymentMethod:sub.paymentMethod,
+      supplyDate:sub.startDate||undefined,
+      supplyEndDate:sub.endDate||'',
+      prepaidAmount:Number(sub.paidAmount)||0,
+      sourceType:'subscription', sourceId:sub.id, branchId:sub.branchId||'',
+    });
+    // نربط رقم الفاتورة النظامي بالاشتراك
+    const all=DB.subscriptions();
+    const ix=all.findIndex(z=>z.id===sub.id);
+    if(ix>-1){ all[ix]={...all[ix],invoiceNo:inv.invoiceNo,invoiceUuid:inv.uuid}; DB.save('subscriptions',all); }
+  }
+  await renderInvoiceDoc(inv,{childName:child.name,branchName:branch.name,
+    subPeriod:(sub.startDate&&sub.endDate)?[sub.startDate,sub.endDate]:null});
+}
 
-  // ── Date / time ───────────────────────────────────────────
-  const now=new Date();
-  const pd=n=>String(n).padStart(2,'0');
-  const issueDate=`${pd(now.getDate())}/${pd(now.getMonth()+1)}/${now.getFullYear()}`;
-  const issueTime=`${pd(now.getHours())}:${pd(now.getMinutes())}:${pd(now.getSeconds())}`;
-  const hijriDate=toHijri(now);
-  const isoTs=now.toISOString();
+// إشعار دائن نظامي مرتبط بفاتورة أصلية (استرجاع / إلغاء / تصحيح)
+async function issueCreditNote(invoiceNo,amount,reason){
+  const orig=findInvoice(invoiceNo);
+  if(!orig){ toast('لم يتم العثور على الفاتورة الأصلية','error'); return null; }
+  const amt=Math.min(Zatca.round(amount||orig.totals.gross),orig.totals.gross);
+  if(!(amt>0)){ toast('المبلغ غير صحيح','error'); return null; }
+  const l0=orig.lines[0]||{taxCategory:'S',taxRate:15};
+  const line=lineFromAmounts(`إشعار دائن على الفاتورة ${orig.invoiceNo}`,amt,l0.taxCategory,l0.taxRate,true,1);
+  line.exemptionReason=l0.exemptionReason||'';
+  const note=await issueInvoice({
+    typeCode:'381', subtype:orig.subtype, lines:[line],
+    buyer:orig.buyer, paymentMethod:orig.paymentMethod,
+    supplyDate:orig.supplyDate, refInvoiceNo:orig.invoiceNo,
+    note:reason||'استرجاع / إلغاء', reasonCode:'1',
+    sourceType:'credit_note', sourceId:orig.id, branchId:orig.branchId,
+  });
+  toast('<i class="ic ic-check"></i> تم إصدار إشعار دائن '+note.invoiceNo);
+  return note;
+}
+function openCreditNoteModal(invoiceNo){
+  const orig=findInvoice(invoiceNo);
+  if(!orig){ toast('لم يتم العثور على الفاتورة','error'); return; }
+  App.modal=`<div class="modal-overlay" onclick="if(event.target===this)App.closeModal()"><div class="modal" style="max-width:480px">
+    <div class="modal-header"><h2>إشعار دائن</h2><button class="close-btn" onclick="App.closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="alert-box alert-yellow" style="margin-bottom:14px"><i class="ic ic-alert"></i> الإشعار الدائن مستند نظامي يُصدَر عند الاسترجاع أو الإلغاء ولا يُلغي الفاتورة الأصلية — تبقى الفاتورة محفوظة كما تشترط الهيئة.</div>
+      <div class="inv-row" style="margin-bottom:10px"><span>الفاتورة الأصلية</span><strong>${esc(orig.invoiceNo)}</strong></div>
+      <div class="input-group"><label>المبلغ المسترجع شامل الضريبة (ر.س)</label>
+        <input class="input" id="cn-amt" type="number" min="0.01" step="0.01" max="${orig.totals.gross}" value="${orig.totals.gross}"></div>
+      <div class="input-group"><label>سبب الإصدار</label>
+        <select class="input" id="cn-reason">
+          <option>إلغاء الاشتراك</option><option>استرجاع مبلغ لولي الأمر</option>
+          <option>تصحيح خطأ في الفاتورة</option><option>خصم لاحق متفق عليه</option>
+        </select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="_doCreditNote('${esc(orig.invoiceNo)}')"><i class="ic ic-receipt"></i> إصدار الإشعار</button>
+      <button class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
+    </div></div></div>`;
+  App.render();
+}
+async function _doCreditNote(invoiceNo){
+  const amt=+(document.getElementById('cn-amt')?.value||0);
+  const reason=document.getElementById('cn-reason')?.value||'';
+  App.closeModal();
+  const n=await issueCreditNote(invoiceNo,amt,reason);
+  if(n) await renderInvoiceDoc(n,{});
+}
 
-  // ── Labels ────────────────────────────────────────────────
-  const tLabel=planName(sub.type);
-  const pLabel=periodName(sub.period);
-  const pmLabel=payTag(sub.paymentMethod);
-  const isPaid=sub.paymentStatus==='paid';
-  const fmt=d=>d?d.split('-').reverse().join('/'):'—';
-  const sar=n=>Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')+' ر.س';
-  const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  const disc=Number(sub.discountPct)||0;
-  const discAmt=disc>0?Math.round(Number(sub.basePrice||0)*disc/100*100)/100:0;
-  const invoiceNo=sub.invoiceNo||'—';
-  const vatNo=school.vatNumber||'—';
-
-  // ── UUID (derived from sub ID) ────────────────────────────
-  const rawId=(sub.id||'').padEnd(32,'0').slice(0,32);
-  const invoiceUUID=`${rawId.slice(0,8)}-${rawId.slice(8,12)}-4${rawId.slice(13,16)}-a${rawId.slice(17,20)}-${rawId.slice(20)}`;
-
-  // ── ZATCA QR code ─────────────────────────────────────────
-  const qrB64=generateZATCAQR(school.name||'مدارك الطفل',vatNo,isoTs,total,vat);
-  const qrUrl=await getQRDataURL(qrB64);
+// ── عرض/طباعة مستند الفاتورة أو الإشعار ───────────────────────
+async function renderInvoiceDoc(inv,ctx){
+  ctx=ctx||{};
+  const isNote=inv.typeCode==='381';
+  const isStandard=inv.subtype==='0100000';
+  const S=inv.seller, B=inv.buyer, A=S.address||{};
+  const paid=inv.totals.prepaid, total=inv.totals.gross, remaining=Math.max(0,Zatca.round(total-paid));
+  const isPaid=remaining<0.005;
+  const hijriDate=toHijri(new Date(inv.issuedAt));
+  const fmt=d=>d?String(d).split('-').reverse().join('/'):'—';
+  const sar=n=>{const [a,b]=Zatca.money(n).split('.');return a.replace(/\B(?=(\d{3})+$)/g,',')+'.'+b+' ر.س';};
+  const e=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const qrUrl=await getQRDataURL(inv.qr||'');
   const qrImg=qrUrl
-    ?`<img src="${qrUrl}" width="180" height="180" style="display:block;margin:0 auto">`
-    :`<div style="width:180px;height:180px;border:2px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;margin:0 auto">QR</div>`;
+    ?`<img src="${qrUrl}" width="170" height="170" style="display:block;margin:0 auto">`
+    :`<div style="width:170px;height:170px;border:2px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;margin:0 auto">QR</div>`;
+  const docTitleAr=isNote?'إشعار دائن':(isStandard?'فاتورة ضريبية':'فاتورة ضريبية مبسّطة');
+  const docTitleEn=isNote?'Credit Note':(isStandard?'Tax Invoice':'Simplified Tax Invoice');
+  const addrLine=[A.buildingNumber,A.street,A.district,A.city,A.postalCode].filter(Boolean).join('، ')||A.free||'—';
+  const warn=zatcaReady()?'':'<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:16px" class="no-print"><b>تنبيه:</b> بيانات المنشأة الضريبية غير مكتملة — أكملي «الإعدادات ← الفوترة الإلكترونية» قبل استخدام الفواتير رسمياً.</div>';
 
   const html=`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>فاتورة ${e(invoiceNo)}</title>
+<title>${e(docTitleAr)} ${e(inv.invoiceNo)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Tajawal',Arial,sans-serif;direction:rtl;color:#1e293b;background:#f1f5f9;font-size:14px}
-.page{max-width:840px;margin:0 auto;padding:20px 16px}
+.page{max-width:860px;margin:0 auto;padding:20px 16px}
 .inv{background:#fff;border-radius:16px;box-shadow:0 4px 28px rgba(0,0,0,.09);overflow:hidden}
-/* HEADER BAND */
-.inv-topband{background:linear-gradient(135deg,#1d4ed8 0%,#2563eb 100%);color:#fff;padding:24px 36px;display:flex;justify-content:space-between;align-items:center;gap:20px}
-.inv-topband h1{font-size:22px;font-weight:900;margin-bottom:3px}
-.inv-topband .sub{font-size:12px;opacity:.8;line-height:1.7}
-.inv-label{background:rgba(255,255,255,.2);border-radius:10px;padding:12px 20px;text-align:center;min-width:200px}
+.inv-topband{background:linear-gradient(135deg,#1d4ed8 0%,#172554 100%);color:#fff;padding:22px 32px;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.inv-topband h1{font-size:21px;font-weight:900;margin-bottom:4px}
+.inv-topband .sub{font-size:11.5px;opacity:.85;line-height:1.85}
+.inv-label{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:12px 18px;text-align:center;min-width:210px}
 .inv-label h2{font-size:16px;font-weight:900}
-.inv-label .en{font-size:10px;opacity:.8;margin-top:2px}
-.inv-label .uuid{font-size:9px;opacity:.6;direction:ltr;margin-top:5px;word-break:break-all}
-.inv-stamp{border:3px solid #fff;border-radius:8px;padding:5px 14px;font-size:15px;font-weight:900;transform:rotate(-8deg);display:inline-block;opacity:.9;margin-top:8px}
-/* BODY */
-.inv-body{padding:28px 36px}
-.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.inv-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px}
-.inv-box h3{font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid #e0f2fe}
-.inv-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;gap:8px;align-items:baseline}
+.inv-label .en{font-size:10px;opacity:.8;margin-top:2px;letter-spacing:.4px}
+.inv-label .uuid{font-size:8.5px;opacity:.65;direction:ltr;margin-top:6px;word-break:break-all;line-height:1.5}
+.inv-stamp{border:2.5px solid #fff;border-radius:8px;padding:5px 14px;font-size:14px;font-weight:900;transform:rotate(-8deg);display:inline-block;opacity:.92}
+.inv-body{padding:26px 32px}
+.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.inv-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:15px}
+.inv-box h3{font-size:11px;font-weight:800;color:#1d4ed8;letter-spacing:.4px;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #e0f2fe}
+.inv-row{display:flex;justify-content:space-between;margin-bottom:7px;font-size:12.5px;gap:10px;align-items:baseline}
 .inv-row span{color:#64748b;flex-shrink:0}
 .inv-row strong{color:#1e293b;text-align:left}
-/* TABLE */
-.inv-tbl{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px}
+.inv-tbl{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12.5px}
 .inv-tbl thead tr{background:#1d4ed8}
-.inv-tbl thead th{color:#fff;padding:10px 12px;font-weight:700;text-align:right}
-.inv-tbl tbody td{padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.inv-tbl thead th{color:#fff;padding:9px 10px;font-weight:700;text-align:right;font-size:11.5px}
+.inv-tbl tbody td{padding:10px;border-bottom:1px solid #f1f5f9;vertical-align:top}
 .inv-tbl tbody tr:last-child td{border-bottom:none}
 .inv-tbl tbody tr:nth-child(even){background:#f8fafc}
-.num{text-align:left;direction:ltr}
-/* TOTALS */
-.totals-wrap{display:flex;justify-content:flex-start;margin-bottom:24px}
-.totals-inner{width:360px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
-.tr{display:flex;justify-content:space-between;padding:10px 14px;font-size:14px;border-bottom:1px solid #f1f5f9;gap:8px}
+.num{text-align:left;direction:ltr;white-space:nowrap}
+.totals-wrap{display:flex;justify-content:flex-start;margin-bottom:20px}
+.totals-inner{width:370px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.tr{display:flex;justify-content:space-between;padding:9px 14px;font-size:13.5px;border-bottom:1px solid #f1f5f9;gap:8px}
 .tr:last-child{border:none}
 .tl{color:#64748b}
 .tv{font-weight:700;direction:ltr}
-.tr-final{background:#1d4ed8;color:#fff;display:flex;justify-content:space-between;padding:14px 16px;font-size:17px;font-weight:900;gap:8px}
-/* FOOTER */
-.inv-foot{display:flex;justify-content:space-between;align-items:flex-start;padding-top:20px;border-top:2px dashed #e2e8f0;gap:20px;flex-wrap:wrap}
+.tr-final{background:#1d4ed8;color:#fff;display:flex;justify-content:space-between;padding:13px 16px;font-size:17px;font-weight:900;gap:8px}
+.inv-foot{display:flex;justify-content:space-between;align-items:flex-start;padding-top:18px;border-top:2px dashed #e2e8f0;gap:18px;flex-wrap:wrap}
 .inv-qr-box{text-align:center}
-.inv-qr-box .cap{font-size:10px;color:#94a3b8;margin-top:5px;line-height:1.6}
-.inv-pay-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;min-width:200px}
-.inv-pay-box h3{font-size:11px;font-weight:700;color:#166534;margin-bottom:10px}
-.pr{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px;gap:8px}
-.inv-legal{font-size:11px;color:#64748b;line-height:1.9;flex:1;max-width:260px}
-.inv-legal strong{color:#1d4ed8;font-size:12px;display:block;margin-bottom:5px}
-/* PRINT BUTTON */
-.print-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:20px auto;padding:13px 40px;background:#1d4ed8;color:#fff;border:none;border-radius:10px;font-size:16px;font-family:'Tajawal',sans-serif;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(29,78,216,.35);transition:background .2s}
-.print-btn:hover{background:#1e40af}
-@media print{
-  .print-btn,.no-print{display:none!important}
-  body{background:#fff}
-  .inv{box-shadow:none;border-radius:0}
-  .page{padding:0;max-width:100%}
-  @page{margin:10mm;size:A4}
-}
+.inv-qr-box .cap{font-size:9.5px;color:#94a3b8;margin-top:6px;line-height:1.7}
+.inv-pay-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:15px;min-width:210px}
+.inv-pay-box h3{font-size:11px;font-weight:800;color:#1d4ed8;margin-bottom:10px}
+.pr{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:7px;gap:10px}
+.inv-legal{font-size:10.5px;color:#64748b;line-height:1.95;flex:1;min-width:230px;max-width:300px}
+.inv-legal strong{color:#1d4ed8;font-size:11.5px;display:block;margin-bottom:5px}
+.chain{margin-top:14px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:9.5px;color:#94a3b8;direction:ltr;word-break:break-all;line-height:1.8}
+.chain b{color:#64748b;direction:rtl;display:inline-block}
+.acts{display:flex;gap:10px;justify-content:center;margin:18px auto;flex-wrap:wrap}
+.acts button{padding:12px 26px;border:none;border-radius:10px;font-size:14.5px;font-family:'Tajawal',sans-serif;font-weight:700;cursor:pointer}
+.b1{background:#1d4ed8;color:#fff;box-shadow:0 4px 16px rgba(29,78,216,.32)}
+.b2{background:#fff;color:#1d4ed8;border:2px solid #dbeafe!important}
+@media print{.no-print{display:none!important}body{background:#fff}.inv{box-shadow:none;border-radius:0}.page{padding:0;max-width:100%}@page{margin:10mm;size:A4}}
 </style>
 </head>
 <body>
 <div class="page">
-<button class="print-btn no-print" onclick="window.print()"><i class="ic ic-printer"></i> طباعة الفاتورة / حفظ PDF</button>
+${warn}
+<div class="acts no-print">
+  <button class="b1" onclick="window.print()">طباعة / حفظ PDF</button>
+  <button class="b2" onclick="window.opener&&window.opener.downloadInvoiceXML('${e(inv.invoiceNo)}')">تنزيل ملف UBL 2.1 (XML)</button>
+  ${isNote?'':`<button class="b2" onclick="window.opener&&window.opener.openCreditNoteModal('${e(inv.invoiceNo)}');window.close()">إصدار إشعار دائن</button>`}
+</div>
 <div class="inv">
 
-  <!-- TOP BAND -->
   <div class="inv-topband">
-    <div>
-      <h1>${e(school.name||'مدارك الطفل')}</h1>
+    <div style="flex:1;min-width:230px">
+      <h1>${e(S.name||'—')}</h1>
       <div class="sub">
-        ${e(school.address||'الرياض، المملكة العربية السعودية')}<br>
-        الرقم الضريبي: <strong dir="ltr">${e(vatNo)}</strong>
-        ${school.phone?' &nbsp;|&nbsp; هاتف: '+e(school.phone):''}
-        ${school.email?' &nbsp;|&nbsp; '+e(school.email):''}
+        ${e(addrLine)}<br>
+        الرقم الضريبي: <strong dir="ltr">${e(S.vatNumber||'—')}</strong>
+        ${S.crNumber?' &nbsp;|&nbsp; س.ت: <strong dir="ltr">'+e(S.crNumber)+'</strong>':''}
+        ${S.phone?'<br>هاتف: '+e(S.phone):''}${S.email?' &nbsp;|&nbsp; '+e(S.email):''}
       </div>
     </div>
     <div class="inv-label">
-      <h2>فاتورة ضريبية مبسطة</h2>
-      <div class="en">Simplified Tax Invoice</div>
-      <div class="uuid">${invoiceUUID}</div>
+      <h2>${e(docTitleAr)}</h2>
+      <div class="en">${e(docTitleEn)}</div>
+      <div class="uuid">UUID: ${e(inv.uuid)}</div>
     </div>
-    <div style="text-align:center">
-      <div class="inv-stamp">${isPaid?'<i class="ic ic-check"></i> مدفوعة':'<i class="ic ic-hourglass"></i> جزئية'}</div>
+    <div style="text-align:center;padding-top:6px">
+      <div class="inv-stamp">${isNote?'إشعار دائن':(isPaid?'مدفوعة':'غير مسدَّدة بالكامل')}</div>
     </div>
   </div>
 
   <div class="inv-body">
 
-    <!-- INFO GRID -->
     <div class="inv-grid">
       <div class="inv-box">
-        <h3><i class="ic ic-file"></i> بيانات الفاتورة</h3>
-        <div class="inv-row"><span>رقم الفاتورة</span><strong>${e(invoiceNo)}</strong></div>
-        <div class="inv-row"><span>التاريخ الميلادي</span><strong>${issueDate}</strong></div>
-        <div class="inv-row"><span>التاريخ الهجري</span><strong>${hijriDate}</strong></div>
-        <div class="inv-row"><span>وقت الإصدار</span><strong dir="ltr">${issueTime}</strong></div>
-        <div class="inv-row"><span>نوع الاشتراك</span><strong>${tLabel} — ${pLabel}</strong></div>
+        <h3>بيانات المستند</h3>
+        <div class="inv-row"><span>${isNote?'رقم الإشعار':'رقم الفاتورة'}</span><strong>${e(inv.invoiceNo)}</strong></div>
+        ${isNote&&inv.refInvoiceNo?`<div class="inv-row"><span>مرجع الفاتورة الأصلية</span><strong>${e(inv.refInvoiceNo)}</strong></div>`:''}
+        <div class="inv-row"><span>تاريخ الإصدار</span><strong>${fmt(inv.issueDate)}</strong></div>
+        <div class="inv-row"><span>التاريخ الهجري</span><strong>${e(hijriDate)}</strong></div>
+        <div class="inv-row"><span>وقت الإصدار</span><strong dir="ltr">${e(inv.issueTime)}</strong></div>
+        <div class="inv-row"><span>تاريخ التوريد</span><strong>${fmt(inv.supplyDate)}${inv.supplyEndDate?' — '+fmt(inv.supplyEndDate):''}</strong></div>
+        <div class="inv-row"><span>العملة</span><strong>ريال سعودي (SAR)</strong></div>
       </div>
       <div class="inv-box">
-        <h3><i class="ic ic-user"></i> بيانات العميل</h3>
-        <div class="inv-row"><span>اسم الطفل</span><strong>${e(child.name||'—')}</strong></div>
-        <div class="inv-row"><span>ولي الأمر</span><strong>${e(child.parentName||'—')}</strong></div>
-        <div class="inv-row"><span>الهاتف</span><strong dir="ltr">${e(child.parentPhone||'—')}</strong></div>
-        <div class="inv-row"><span>الفرع</span><strong>${e(branch.name||'—')}</strong></div>
-        <div class="inv-row"><span>فترة الاشتراك</span><strong>${fmt(sub.startDate)} — ${fmt(sub.endDate)}</strong></div>
+        <h3>بيانات المشتري</h3>
+        <div class="inv-row"><span>الاسم</span><strong>${e(B.name||'عميل نقدي')}</strong></div>
+        ${B.vatNumber?`<div class="inv-row"><span>الرقم الضريبي للمشتري</span><strong dir="ltr">${e(B.vatNumber)}</strong></div>`:''}
+        ${B.phone?`<div class="inv-row"><span>الهاتف</span><strong dir="ltr">${e(B.phone)}</strong></div>`:''}
+        ${ctx.childName?`<div class="inv-row"><span>المستفيد</span><strong>${e(ctx.childName)}</strong></div>`:''}
+        ${ctx.branchName?`<div class="inv-row"><span>الفرع</span><strong>${e(ctx.branchName)}</strong></div>`:''}
+        ${ctx.subPeriod?`<div class="inv-row"><span>مدة الخدمة</span><strong>${fmt(ctx.subPeriod[0])} — ${fmt(ctx.subPeriod[1])}</strong></div>`:''}
       </div>
     </div>
 
-    <!-- ITEMS TABLE -->
     <table class="inv-tbl">
       <thead>
         <tr>
-          <th style="width:34px;text-align:center">#</th>
+          <th style="width:30px;text-align:center">#</th>
           <th>البيان</th>
-          <th>المدة</th>
-          <th class="num">السعر قبل ض.ق.م</th>
-          <th style="text-align:center">نسبة الضريبة</th>
+          <th style="text-align:center;width:46px">الكمية</th>
+          <th class="num">سعر الوحدة</th>
+          <th class="num">الإجمالي قبل الضريبة</th>
+          <th style="text-align:center;width:88px">فئة الضريبة</th>
           <th class="num">مبلغ الضريبة</th>
-          <th class="num">الإجمالي شامل ض.ق.م</th>
+          <th class="num">الإجمالي شامل الضريبة</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td style="text-align:center;color:#94a3b8">1</td>
-          <td><strong>اشتراك ${tLabel} ${pLabel}</strong><br><small style="color:#64748b">${e(child.name||'')}</small></td>
-          <td style="font-size:12px;color:#64748b;white-space:nowrap">${fmt(sub.startDate)}<br>${fmt(sub.endDate)}</td>
-          <td class="num">${sar(base)}</td>
-          <td style="text-align:center">${(vr*100).toFixed(0)}%</td>
-          <td class="num">${sar(vat)}</td>
-          <td class="num" style="font-weight:700;color:#1d4ed8">${sar(total)}</td>
-        </tr>
-        ${disc>0?`<tr style="background:#fffbeb">
-          <td></td>
-          <td colspan="2" style="color:#d97706;font-size:12px">خصم ${disc}% على السعر الأساسي (${sar(sub.basePrice||0)})</td>
-          <td colspan="4" class="num" style="color:#d97706;font-weight:700">- ${sar(discAmt)}</td>
-        </tr>`:''}
+        ${inv.lines.map(l=>`<tr>
+          <td style="text-align:center;color:#94a3b8">${l.index}</td>
+          <td><strong>${e(l.name)}</strong>${l.exemptionReason?`<br><small style="color:#64748b">${e(VAT_EXEMPTION_REASONS[l.exemptionReason]||l.exemptionReason)}</small>`:''}</td>
+          <td style="text-align:center">${l.quantity}</td>
+          <td class="num">${sar(l.unitPrice)}</td>
+          <td class="num">${sar(l.netAmount)}</td>
+          <td style="text-align:center;font-size:11px">${e((VAT_CATEGORIES[l.taxCategory]||{}).name||l.taxCategory)}<br><b>${Number(l.taxRate).toFixed(0)}%</b></td>
+          <td class="num">${sar(l.taxAmount)}</td>
+          <td class="num" style="font-weight:700;color:#1d4ed8">${sar(l.grossAmount)}</td>
+        </tr>`).join('')}
       </tbody>
     </table>
 
-    <!-- TOTALS -->
     <div class="totals-wrap">
       <div class="totals-inner">
-        <div class="tr"><span class="tl">المجموع قبل ضريبة القيمة المضافة</span><span class="tv">${sar(base)}</span></div>
-        <div class="tr"><span class="tl">ضريبة القيمة المضافة (${(vr*100).toFixed(0)}%)</span><span class="tv" style="color:#1d4ed8">${sar(vat)}</span></div>
-        ${disc>0?`<div class="tr"><span class="tl">الخصم</span><span class="tv" style="color:#d97706">- ${sar(discAmt)}</span></div>`:''}
-        <div class="tr-final"><span>الإجمالي شامل ض.ق.م</span><span dir="ltr">${sar(total)}</span></div>
+        <div class="tr"><span class="tl">الإجمالي قبل ضريبة القيمة المضافة</span><span class="tv">${sar(inv.totals.net)}</span></div>
+        <div class="tr"><span class="tl">ضريبة القيمة المضافة</span><span class="tv" style="color:#1d4ed8">${sar(inv.totals.tax)}</span></div>
+        <div class="tr-final"><span>${isNote?'إجمالي المبلغ المسترجع':'الإجمالي شامل الضريبة'}</span><span dir="ltr">${sar(inv.totals.gross)}</span></div>
+        ${!isNote&&inv.totals.prepaid>0?`<div class="tr"><span class="tl">المدفوع</span><span class="tv" style="color:#059669">${sar(inv.totals.prepaid)}</span></div>`:''}
+        ${!isNote&&remaining>0.005?`<div class="tr"><span class="tl">المتبقي المستحق</span><span class="tv" style="color:#dc2626">${sar(remaining)}</span></div>`:''}
       </div>
     </div>
 
-    <!-- FOOTER -->
     <div class="inv-foot">
       <div class="inv-qr-box">
         ${qrImg}
-        <div class="cap">رمز الاستجابة السريعة<br>ZATCA QR Code<br>(Phase 1)</div>
+        <div class="cap">رمز الاستجابة السريعة وفق مواصفة الهيئة<br>ZATCA QR — TLV Base64</div>
       </div>
       <div class="inv-pay-box">
-        <h3><i class="ic ic-card"></i> معلومات الدفع</h3>
-        <div class="pr"><span>طريقة الدفع</span><strong>${pmLabel}</strong></div>
-        <div class="pr"><span>الإجمالي المستحق</span><strong dir="ltr">${sar(total)}</strong></div>
-        <div class="pr"><span>المبلغ المدفوع</span><strong dir="ltr" style="color:#059669">${sar(paid)}</strong></div>
-        ${remaining>0.005?`<div class="pr"><span>المتبقي</span><strong dir="ltr" style="color:#dc2626">${sar(remaining)}</strong></div>`:''}
+        <h3>معلومات السداد</h3>
+        <div class="pr"><span>طريقة الدفع</span><strong>${e(payName(inv.paymentMethod))}</strong></div>
+        <div class="pr"><span>رمز طريقة الدفع</span><strong dir="ltr">${e(inv.paymentMeansCode)}</strong></div>
+        <div class="pr"><span>الإجمالي</span><strong dir="ltr">${sar(total)}</strong></div>
+        ${!isNote?`<div class="pr"><span>المدفوع</span><strong dir="ltr" style="color:#059669">${sar(paid)}</strong></div>`:''}
+        ${!isNote&&remaining>0.005?`<div class="pr"><span>المتبقي</span><strong dir="ltr" style="color:#dc2626">${sar(remaining)}</strong></div>`:''}
       </div>
       <div class="inv-legal">
-        <strong>${e(school.name||'مدارك الطفل')}</strong>
-        صدرت هذه الفاتورة إلكترونياً وفق متطلبات نظام الفوترة الإلكترونية لهيئة الزكاة والضريبة والدخل — المرحلة الأولى (مرحلة الإصدار).<br><br>
-        This invoice is electronically generated in compliance with ZATCA e-invoicing system — Phase 1 (Generation Phase).
+        <strong>${e(S.name||'')}</strong>
+        صدر هذا المستند إلكترونياً وفق نظام الفوترة الإلكترونية الصادر عن هيئة الزكاة والضريبة والدخل واللائحة التنفيذية لضريبة القيمة المضافة (المادة ٥٣)، بصيغة UBL 2.1.<br><br>
+        Electronically generated under the ZATCA e-invoicing regulation (UBL 2.1). ${isStandard?'Standard':'Simplified'} ${isNote?'Credit Note':'Tax Invoice'}.
       </div>
     </div>
 
-  </div><!-- end .inv-body -->
-</div><!-- end .inv -->
-</div><!-- end .page -->
+    <div class="chain">
+      <b>عدّاد الفاتورة (ICV):</b> ${inv.icv} &nbsp;·&nbsp; <b>نوع المستند:</b> ${e(inv.typeCode)}/${e(inv.subtype)}<br>
+      <b>تجزئة المستند (Hash):</b> ${e(inv.hash||'—')}<br>
+      <b>تجزئة المستند السابق (PIH):</b> ${e(inv.pih||'—')}
+    </div>
+
+  </div>
+</div>
+</div>
 </body>
 </html>`;
 

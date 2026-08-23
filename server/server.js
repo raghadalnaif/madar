@@ -146,6 +146,19 @@ function bearerFrom(req) {
   return h.startsWith('Bearer ') ? h.slice(7) : (req.query.token || '');
 }
 
+// يكتب حقولاً في سجل «schools» الخاص بالمدرسة (الاسم/الشعار/التواصل) ويبثّها فوراً
+function patchTenantSchool(t, patch) {
+  const row = db.prepare('SELECT value FROM kv WHERE tenant_id = ? AND key = ?').get(t.id, 'schools');
+  let schools = [];
+  if (row) { try { schools = JSON.parse(row.value) || []; } catch (e) {} }
+  if (!schools.length) {
+    schools = [{ id: 's1', name: t.name, contactPerson: t.contact_person, phone: t.phone, email: t.email, isActive: true, joinDate: todayStr() }];
+  }
+  schools[0] = { ...schools[0], ...patch };
+  qUpsert.run(t.id, 'schools', JSON.stringify(schools), Date.now());
+  broadcast(t.id, 'schools', schools, '');
+  return schools;
+}
 function tenantLogo(tenantId) {
   try {
     const row = db.prepare('SELECT value FROM kv WHERE tenant_id = ? AND key = ?').get(tenantId, 'schools');
@@ -286,6 +299,13 @@ app.put('/api/platform/tenants/:id', platformAuth, (req, res) => {
     const hash = hashPassword(b.password, salt);
     db.prepare('UPDATE tenants SET password_hash=?, salt=? WHERE id=?').run(hash, salt, t.id);
   }
+  // الاسم وبيانات التواصل التي يضبطها مزوّد الخدمة تظهر داخل نظام المدرسة نفسها
+  const patch = {};
+  if (b.name !== undefined) patch.name = next.name;
+  if (b.contactPerson !== undefined) patch.contactPerson = next.contact_person;
+  if (b.phone !== undefined) patch.phone = next.phone;
+  if (b.email !== undefined) patch.email = next.email;
+  if (Object.keys(patch).length) { try { patchTenantSchool(t, patch); } catch (e) {} }
   const updated = db.prepare('SELECT * FROM tenants WHERE id = ?').get(t.id);
   res.json({ ok: true, tenant: tenantToPublic(updated) });
 });
@@ -295,15 +315,7 @@ app.put('/api/platform/tenants/:id/logo', platformAuth, (req, res) => {
   const t = db.prepare('SELECT * FROM tenants WHERE id = ?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'not_found' });
   const { logoDataUrl } = req.body || {};
-  const row = db.prepare('SELECT value FROM kv WHERE tenant_id = ? AND key = ?').get(t.id, 'schools');
-  let schools = [];
-  if (row) { try { schools = JSON.parse(row.value) || []; } catch (e) {} }
-  if (!schools.length) {
-    schools = [{ id: 's1', name: t.name, contactPerson: t.contact_person, phone: t.phone, email: t.email, isActive: true, joinDate: todayStr() }];
-  }
-  schools[0] = { ...schools[0], logoDataUrl: logoDataUrl || '' };
-  qUpsert.run(t.id, 'schools', JSON.stringify(schools), Date.now());
-  broadcast(t.id, 'schools', schools, '');
+  patchTenantSchool(t, { logoDataUrl: logoDataUrl || '' });
   res.json({ ok: true });
 });
 
