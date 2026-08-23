@@ -146,11 +146,20 @@ function bearerFrom(req) {
   return h.startsWith('Bearer ') ? h.slice(7) : (req.query.token || '');
 }
 
+function tenantLogo(tenantId) {
+  try {
+    const row = db.prepare('SELECT value FROM kv WHERE tenant_id = ? AND key = ?').get(tenantId, 'schools');
+    if (!row) return '';
+    const schools = JSON.parse(row.value) || [];
+    return (schools[0] && schools[0].logoDataUrl) || '';
+  } catch (e) { return ''; }
+}
 function tenantToPublic(t) {
   return {
     id: t.id, name: t.name, username: t.username, contactPerson: t.contact_person, phone: t.phone, email: t.email,
     membershipType: t.membership_type, termType: t.term_type, subStart: t.sub_start, subEnd: t.sub_end,
     status: t.status, notes: t.notes, paymentMethod: t.payment_method, createdAt: t.created_at,
+    logoDataUrl: tenantLogo(t.id),
   };
 }
 function subscriptionActive(t) {

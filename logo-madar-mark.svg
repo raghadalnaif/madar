@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 172" width="260" height="172" role="img" aria-label="مدار">
+  <defs>
+    <linearGradient id="MG" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#1b64d8"/><stop offset="55%" stop-color="#2f9fd0"/><stop offset="100%" stop-color="#3fc7a8"/>
+    </linearGradient>
+    <linearGradient id="OG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b64d8"/><stop offset="100%" stop-color="#3fc7a8"/>
+    </linearGradient>
+    <linearGradient id="NG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22417f"/><stop offset="100%" stop-color="#16265c"/>
+    </linearGradient>
+  </defs>
+  <g transform="rotate(-18 130 100)">
+    <ellipse cx="130" cy="100" rx="90" ry="33" fill="none" stroke="url(#OG)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <circle cx="209" cy="76" r="10" fill="#35bfa5"/>
+
+  <g fill="none" stroke-linecap="round">
+    <path d="M66 150 V104 a26 26 0 0 1 52 0 V150" stroke="url(#NG)" stroke-width="20"/>
+    <path d="M124 150 V104 a26 26 0 0 1 52 0 V150" stroke="url(#MG)" stroke-width="20"/>
+  </g>
+
+  <g transform="rotate(-14 86 60)">
+    <path d="M86 40 129 55 86 70 43 55z" fill="#16265c"/>
+    <path d="M61 61v13c0 6.5 11 11 25 11s25-4.5 25-11V61L86 70z" fill="#1e3a75"/>
+    <path d="M125 56v20" stroke="#35bfa5" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+    <circle cx="125" cy="79" r="4" fill="#35bfa5"/>
+  </g>
+</svg>
