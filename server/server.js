@@ -62,6 +62,14 @@ db.exec(`
   }
 })();
 
+// ---------- ترحيل: ربط كل مدرسة بباقة ----------
+(function migrateTenantsPackage() {
+  const cols = db.prepare("PRAGMA table_info(tenants)").all();
+  if (!cols.some(c => c.name === 'package_id')) {
+    db.exec("ALTER TABLE tenants ADD COLUMN package_id TEXT DEFAULT ''");
+  }
+})();
+
 // ---------- ترحيل: تحويل جدول kv القديم (بدون فصل مدارس) إلى tenant افتراضي ----------
 (function migrateLegacyKv() {
   const cols = db.prepare("PRAGMA table_info(kv)").all();
@@ -167,12 +175,63 @@ function tenantLogo(tenantId) {
     return (schools[0] && schools[0].logoDataUrl) || '';
   } catch (e) { return ''; }
 }
+// ---------- الباقات التي يعرّفها مزوّد الخدمة ----------
+const ALL_FEATURES = [
+  'children','subscriptions','attendance','childNotes','activities',
+  'sales','expenses','accounting','taxInvoices','cashClosing','monthlyClose','branchTasks',
+  'hr','govDocs','users','schools','branches',
+  'reports','branchReport','messages','tasks','auditLog','whatsapp','settings',
+];
+const DEFAULT_PACKAGES = [
+  { id: 'nursery', name: 'دار ضيافة للأطفال', price: 199, billing: 'monthly', order: 1, active: true,
+    desc: 'للرعاية اليومية والأعمار الصغيرة',
+    maxBranches: 1, maxChildren: 60, maxUsers: 6,
+    features: ['children','subscriptions','attendance','sales','expenses','taxInvoices','cashClosing','reports','messages','whatsapp','settings'] },
+  { id: 'kindergarten', name: 'روضة أطفال', price: 349, billing: 'monthly', order: 2, active: true,
+    desc: 'لرياض الأطفال والمراحل التمهيدية',
+    maxBranches: 2, maxChildren: 200, maxUsers: 20,
+    features: ['children','subscriptions','attendance','childNotes','activities','sales','expenses','accounting','taxInvoices','cashClosing','reports','messages','tasks','whatsapp','users','settings'] },
+  { id: 'school', name: 'مدرسة', price: 749, billing: 'monthly', order: 3, active: true, highlight: true,
+    desc: 'الباقة الكاملة — إدارة متكاملة وتحوّل رقمي شامل',
+    maxBranches: 0, maxChildren: 0, maxUsers: 0,
+    features: ALL_FEATURES.slice() },
+];
+function getPackages() {
+  const row = db.prepare('SELECT v FROM meta WHERE k = ?').get('packages');
+  if (row) { try { const l = JSON.parse(row.v); if (Array.isArray(l) && l.length) return l; } catch (e) {} }
+  return DEFAULT_PACKAGES.map(p => ({ ...p, features: p.features.slice() }));
+}
+function savePackages(list) {
+  db.prepare('INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v')
+    .run('packages', JSON.stringify(list));
+}
+function sanitizePackage(p, i) {
+  const id = String(p.id || '').trim() || ('pkg' + Date.now() + i);
+  const feats = Array.isArray(p.features) ? p.features.filter(f => ALL_FEATURES.includes(f)) : [];
+  return {
+    id,
+    name: String(p.name || '').trim() || 'باقة',
+    desc: String(p.desc || '').trim(),
+    price: Math.max(0, Number(p.price) || 0),
+    billing: ['monthly', 'quarterly', 'yearly', 'two_years'].includes(p.billing) ? p.billing : 'monthly',
+    maxBranches: Math.max(0, parseInt(p.maxBranches) || 0),
+    maxChildren: Math.max(0, parseInt(p.maxChildren) || 0),
+    maxUsers: Math.max(0, parseInt(p.maxUsers) || 0),
+    features: feats,
+    highlight: !!p.highlight,
+    active: p.active !== false,
+    order: Number(p.order) || i + 1,
+  };
+}
+function packageById(id) { return getPackages().find(p => p.id === id) || null; }
+
 function tenantToPublic(t) {
   return {
     id: t.id, name: t.name, username: t.username, contactPerson: t.contact_person, phone: t.phone, email: t.email,
     membershipType: t.membership_type, termType: t.term_type, subStart: t.sub_start, subEnd: t.sub_end,
     status: t.status, notes: t.notes, paymentMethod: t.payment_method, createdAt: t.created_at,
     logoDataUrl: tenantLogo(t.id),
+    packageId: t.package_id || '', package: packageById(t.package_id) || null,
   };
 }
 function subscriptionActive(t) {
@@ -291,9 +350,10 @@ app.put('/api/platform/tenants/:id', platformAuth, (req, res) => {
     status: ['active', 'pending', 'suspended'].includes(b.status) ? b.status : t.status,
     notes: b.notes !== undefined ? b.notes : t.notes,
     payment_method: b.paymentMethod !== undefined ? b.paymentMethod : t.payment_method,
+    package_id: b.packageId !== undefined ? String(b.packageId || '') : (t.package_id || ''),
   };
-  db.prepare(`UPDATE tenants SET name=?,contact_person=?,phone=?,email=?,membership_type=?,term_type=?,sub_start=?,sub_end=?,status=?,notes=?,payment_method=? WHERE id=?`)
-    .run(next.name, next.contact_person, next.phone, next.email, next.membership_type, next.term_type, next.sub_start, next.sub_end, next.status, next.notes, next.payment_method, t.id);
+  db.prepare(`UPDATE tenants SET name=?,contact_person=?,phone=?,email=?,membership_type=?,term_type=?,sub_start=?,sub_end=?,status=?,notes=?,payment_method=?,package_id=? WHERE id=?`)
+    .run(next.name, next.contact_person, next.phone, next.email, next.membership_type, next.term_type, next.sub_start, next.sub_end, next.status, next.notes, next.payment_method, next.package_id, t.id);
   if (b.password) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(b.password, salt);
@@ -308,6 +368,29 @@ app.put('/api/platform/tenants/:id', platformAuth, (req, res) => {
   if (Object.keys(patch).length) { try { patchTenantSchool(t, patch); } catch (e) {} }
   const updated = db.prepare('SELECT * FROM tenants WHERE id = ?').get(t.id);
   res.json({ ok: true, tenant: tenantToPublic(updated) });
+});
+
+// ---------- الباقات ----------
+// عامة: صفحة الأسعار تعرضها للزوّار
+app.get('/api/packages', (req, res) => {
+  res.json({ packages: getPackages().filter(p => p.active !== false).sort((a, b) => a.order - b.order) });
+});
+// مزوّد الخدمة: القائمة الكاملة + الحفظ
+app.get('/api/platform/packages', platformAuth, (req, res) => {
+  res.json({ packages: getPackages().sort((a, b) => a.order - b.order), allFeatures: ALL_FEATURES });
+});
+app.put('/api/platform/packages', platformAuth, (req, res) => {
+  const list = Array.isArray(req.body && req.body.packages) ? req.body.packages : null;
+  if (!list) return res.status(400).json({ error: 'bad_request' });
+  if (list.length > 20) return res.status(400).json({ error: 'too_many_packages' });
+  const clean = list.map(sanitizePackage);
+  const ids = new Set();
+  for (const p of clean) {
+    if (ids.has(p.id)) return res.status(400).json({ error: 'duplicate_package_id' });
+    ids.add(p.id);
+  }
+  savePackages(clean);
+  res.json({ ok: true, packages: clean });
 });
 
 // ---------- مزوّد الخدمة يرفع شعار مدرسة نيابة عنها ----------
