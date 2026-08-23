@@ -7,10 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>مدار — إدارة المدارس من مكان واحد</title>
-<!-- BUILD: 2026-08-23-v93 -->
+<!-- BUILD: 2026-08-23-v94 -->
 <script>
 (function(){
-  var BUILD='v93-20260823-3';
+  var BUILD='v94-20260823-4';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -1085,7 +1085,7 @@ const DB = {
   },
   markNotifsRead(){this.save('notifications',this.notifications().map(n=>({...n,isRead:true})));},
   settings(){
-    const def={prices:{morning:{daily:150,weekly:600,monthly:1800},evening:{daily:70,weekly:300,monthly:900}},invoicePrefix:'INV',alertDays:{warn:7,urgent:3},waTemplate:'السلام عليكم {parentName}، نُذكّركم بأن اشتراك طفلكم {name} سينتهي بتاريخ {date}. يرجى التواصل للتجديد. شكراً.',waTemplateDefaulter:'السلام عليكم {parentName}، اشتراك طفلكم {name} قد انتهى بتاريخ {date} ولا يزال هناك مبلغ متبقي {remaining} ر.س. يرجى التواصل لتسوية الحساب. شكراً.',waTemplatePending:'السلام عليكم {parentName}، نُذكّركم بوجود مبلغ {remaining} ر.س متبقي على اشتراك طفلكم {name} (ينتهي {date}). يرجى إتمام السداد. شكراً.',vatRate:15,vatInclusive:true,periods:null,feePlans:null,payMethods:null};
+    const def={prices:{morning:{daily:150,weekly:600,monthly:1800},evening:{daily:70,weekly:300,monthly:900}},invoicePrefix:'INV',alertDays:{warn:7,urgent:3},waTemplate:'السلام عليكم {parentName}، نُذكّركم بأن اشتراك طفلكم {name} سينتهي بتاريخ {date}. يرجى التواصل للتجديد. شكراً.',waTemplateDefaulter:'السلام عليكم {parentName}، اشتراك طفلكم {name} قد انتهى بتاريخ {date} ولا يزال هناك مبلغ متبقي {remaining} ر.س. يرجى التواصل لتسوية الحساب. شكراً.',waTemplatePending:'السلام عليكم {parentName}، نُذكّركم بوجود مبلغ {remaining} ر.س متبقي على اشتراك طفلكم {name} (ينتهي {date}). يرجى إتمام السداد. شكراً.',vatRate:15,vatInclusive:true,periods:null,feePlans:null,payMethods:null,stages:null};
     const s=this.get('settings');
     if(s) ['waTemplate','waTemplateDefaulter','waTemplatePending'].forEach(k=>{ if(typeof s[k]==='string'&&s[k].includes('<')) s[k]=s[k].replace(/<[^>]*>/g,'').replace(/\s{2,}/g,' ').trim(); });
     return s?{...def,...s,prices:{...def.prices,...(s.prices||{})},alertDays:{...def.alertDays,...(s.alertDays||{})}}:def;
@@ -1251,6 +1251,43 @@ function periodTagFull(k){return '<i class="ic ic-'+periodIcon(k)+'"></i> '+esc(
 function periodBadge(k){const cls=['badge-blue','badge-orange','badge-green','badge-purple','badge-yellow'];const i=Math.max(0,PERIODS(true).findIndex(p=>p.k===k));return cls[i%cls.length];}
 function periodHours(k){const p=periodObj(k);return (p.from&&p.to)?(p.from+' – '+p.to):'';}
 function defaultPeriodKey(){const l=PERIODS();return l.length?l[0].k:'morning';}
+// ===== المراحل الدراسية (تصنيف الطلاب) =====
+const DEFAULT_STAGES=[
+  {k:'nursery',name:'حضانة',order:1,active:true},
+  {k:'kg1',name:'روضة أولى (KG1)',order:2,active:true},
+  {k:'kg2',name:'روضة ثانية (KG2)',order:3,active:true},
+  {k:'kg3',name:'تمهيدي (KG3)',order:4,active:true},
+];
+function STAGES(all){
+  const l=_cfgList('stages',DEFAULT_STAGES).slice().sort((a,b)=>(+a.order||0)-(+b.order||0));
+  return all?l:l.filter(x=>x.active!==false);
+}
+function stageObj(k){ return STAGES(true).find(x=>x.k===k)||null; }
+// الاسم المعروض: مرحلة معرّفة، أو النص القديم كما هو (توافق مع البيانات السابقة)
+function stageName(k){ if(!k) return ''; const o=stageObj(k); return o?o.name:String(k); }
+function stageOptions(sel){
+  const known=STAGES().some(x=>x.k===sel);
+  return '<option value="">— بدون مرحلة —</option>'
+    + STAGES().map(x=>`<option value="${esc(x.k)}"${x.k===sel?' selected':''}>${esc(x.name)}</option>`).join('')
+    + (sel&&!known?`<option value="${esc(sel)}" selected>${esc(sel)} (قديم)</option>`:'');
+}
+function stageBadge(k){
+  if(!k) return '';
+  const i=Math.max(0,STAGES(true).findIndex(x=>x.k===k));
+  const cls=['badge-blue','badge-green','badge-orange','badge-purple','badge-yellow'];
+  return `<span class="badge ${cls[i%cls.length]}" style="font-size:10px">${esc(stageName(k))}</span>`;
+}
+// مطابقة نص حرّ (من ملف Excel مثلاً) بأقرب مرحلة معرّفة
+function matchStage(txt){
+  const t=String(txt||'').trim(); if(!t) return '';
+  const list=STAGES(true);
+  const exact=list.find(x=>x.k===t||x.name===t);
+  if(exact) return exact.k;
+  const norm=v=>String(v).toLowerCase().replace(/[\s()\-_]/g,'');
+  const n=norm(t);
+  const loose=list.find(x=>norm(x.name).includes(n)||n.includes(norm(x.name))||norm(x.k)===n);
+  return loose?loose.k:t;   // نص غير معروف يُحفظ كما هو
+}
 // باقات الرسوم
 function FEE_PLANS(all){const l=_cfgList('feePlans',DEFAULT_FEE_PLANS);return all?l:l.filter(x=>x.active!==false);}
 function planObj(id){return FEE_PLANS(true).find(p=>p.id===id)||DEFAULT_FEE_PLANS.find(p=>p.id===id)||{id:id,name:(id==='custom'?'مخصص':id),days:0};}
@@ -3008,6 +3045,8 @@ children(){
   if(q) kids=kids.filter(c=>(c.name||'').includes(q)||(c.parentName||'').toLowerCase().includes(q)||(c.parentPhone||'').includes(q));
   if(!bid&&bFilter!=='all') kids=kids.filter(c=>c.branchId===bFilter);
   if(!uPeriod&&pFilter!=='all') kids=kids.filter(c=>c.period===pFilter);
+  const sFilter=App.params.stage||'';
+  if(sFilter) kids=kids.filter(c=>c.grade===sFilter);
   // إخفاء الأطفال غير المشتركين (اختياري — لمدير الفرع والمدير العام)
   const hideNoSub=App.params.hideNoSub==='1';
   const noSubCount=kids.filter(c=>!DB.activeSub(c.id)).length;
@@ -3025,7 +3064,7 @@ children(){
   return `
   <div class="actions-bar" style="flex-wrap:wrap">
     <button class="btn btn-primary btn-sm" onclick="Modals.addChild()">+ إضافة طفل</button>
-    <button class="btn btn-secondary btn-sm" onclick="Modals.importChildren()"><i class="ic ic-download"></i> استيراد Excel</button>
+    <button class="btn btn-secondary btn-sm" onclick="openImport('children')"><i class="ic ic-upload"></i> استيراد Excel</button>
     <button class="btn btn-secondary btn-sm" onclick="exportTableCSV('kids-table','الأطفال')"><i class="ic ic-chart"></i> تصدير</button>
     <button class="btn btn-sm" style="background:#1d4ed8;color:#fff" onclick="printAllPickupCards()" title="طباعة بطاقة خروج لكل طفل"><i class="ic ic-id-card"></i> بطاقات الخروج</button>
     ${(noSubCount>0||hideNoSub)?`<button class="btn btn-sm ${hideNoSub?'btn-warning':'btn-secondary'}" onclick="App.go('children',{...App.params,hideNoSub:'${hideNoSub?'0':'1'}'})" title="إظهار/إخفاء الأطفال غير المشتركين">${hideNoSub?'<i class="ic ic-eye"></i> إظهار الكل':`<i class="ic ic-eye-off"></i> إخفاء غير المشتركين (${noSubCount})`}</button>`:''}
@@ -3048,6 +3087,11 @@ children(){
     </div>`:''}
     ${!uPeriod?`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;${!bid?'border-top:1px solid #f1f5f9;padding-top:8px':''}">
       <span style="font-size:13px;font-weight:600;color:#64748b"><i class="ic ic-clock"></i> الفترة:</span> <span class="chip ${pFilter==='all'?'active':''}" onclick="App.go('children',{...App.params,period:'all'})">الكل</span> ${PERIODS().map(pp=>`<span class="chip ${pFilter===pp.k?'active':''}" onclick="App.go('children',{...App.params,period:'${pp.k}'})">${periodTag(pp.k)}</span>`).join(' ')} </div>`:''}
+    ${STAGES().length?`<div class="filters-bar" style="flex-wrap:wrap">
+      <span style="font-size:13px;font-weight:600;color:#64748b"><i class="ic ic-grid"></i> المرحلة:</span>
+      <span class="chip ${!App.params.stage?'active':''}" onclick="App.go('children',{...App.params,stage:''})">الكل</span>
+      ${STAGES().map(st=>`<span class="chip ${App.params.stage===st.k?'active':''}" onclick="App.go('children',{...App.params,stage:'${st.k}'})">${esc(st.name)} (${DB.children().filter(c=>c.grade===st.k).length})</span>`).join(' ')}
+    </div>`:''}
   </div>`:''}
   <div class="card"><div class="table-wrap">
     <table id="kids-table">
@@ -3251,7 +3295,7 @@ attendance(){
     const noSub=!hasActiveSub(c.id);
     return `<div class="attendance-card ${status}" id="att-${c.id}" style="${noSub?'opacity:0.78;border:1px dashed #fbbf24;':''}">
       <div style="font-weight:700;font-size:14px">${esc(c.name)}</div>
-      <div style="font-size:11px;color:#64748b;margin-top:2px">${c.grade||''} — ${esc(c.parentName)}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px">${esc(stageName(c.grade))||''} — ${esc(c.parentName)}</div>
       ${teacher?`<div style="font-size:11px;color:#1d4ed8;margin-top:3px"><i class="ic ic-user"></i><i class="ic ic-school"></i> ${esc(teacher.name)}</div>`:''}
       <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
         <span class="badge badge-blue" style="font-size:10px"><i class="ic ic-building"></i> ${DB.branchName(c.branchId)}</span> <span class="badge ${periodBadge(c.period)}" style="font-size:10px">${periodTag(c.period)}</span> ${noSub?`<span class="badge badge-yellow" style="font-size:10px"><i class="ic ic-alert"></i> بدون اشتراك</span>`:''}
@@ -4620,6 +4664,7 @@ expenses(){
         </select>
       </div>`:`<div class="input-group" style="margin:0"><label style="font-size:12px"><i class="ic ic-building"></i> الفرع</label><div class="input" style="background:#f8fafc;color:#1d4ed8;font-weight:700">${esc(DB.branchName(bid))}</div></div>`}
       <button class="btn btn-primary btn-sm" onclick="Modals.addExpense()">+ تسجيل مصروف</button>
+      <button class="btn btn-secondary btn-sm" onclick="openImport('finance')"><i class="ic ic-upload"></i> استيراد Excel</button>
       <button class="btn btn-secondary btn-sm" onclick="exportTableCSV('exp-table','مصروفات-'+'${fMonth}')"><i class="ic ic-chart"></i> CSV</button>
       ${(fCat!=='all'||(!bid&&fBranch!=='all'))?`<button class="btn btn-secondary btn-sm" onclick="App.go('expenses',{expMonth:'${fMonth}'})">✕ مسح</button>`:''}
     </div>
@@ -5744,6 +5789,22 @@ settings(){
       <div style="margin-top:18px"><button class="btn btn-primary" onclick="saveSettingsPeriods()"><i class="ic ic-save"></i> حفظ فترات العمل</button></div>
       <div style="margin-top:12px;font-size:12px;color:#94a3b8"><i class="ic ic-alert"></i> إلغاء تفعيل فترة يخفيها من الشاشات الجديدة، لكن السجلات القديمة المرتبطة بها تبقى محفوظة.</div>
     </div>`;
+    content+=`
+    <div class="card" style="max-width:820px;margin-top:16px">
+      <div class="card-title"><i class="ic ic-grid"></i> المراحل الدراسية</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:14px">صنّفي طلابك حسب مراحل مدرستك — حضانة، تمهيدي، KG1... أو أي تسمية تستخدمينها. تظهر المرحلة في ملف الطالب والقوائم والتقارير.</div>
+      <div id="st-rows">
+        ${STAGES(true).map(x=>`
+        <div class="pr-row st-row" data-k="${esc(x.k)}" style="display:grid;grid-template-columns:1fr 110px 90px 40px;gap:10px;align-items:end;margin-bottom:10px">
+          <div class="input-group" style="margin:0"><label>اسم المرحلة</label><input class="input st-name" value="${esc(x.name)}" placeholder="مثال: روضة أولى"></div>
+          <div class="input-group" style="margin:0"><label>الترتيب</label><input class="input st-order" type="number" min="1" value="${+x.order||1}"></div>
+          <div class="input-group" style="margin:0"><label>مفعّلة</label><select class="input st-active"><option value="1" ${x.active!==false?'selected':''}>نعم</option><option value="0" ${x.active===false?'selected':''}>لا</option></select></div>
+          <button class="btn btn-danger btn-sm" style="margin-bottom:2px" onclick="_removeStageRow(this)"><i class="ic ic-trash"></i></button>
+        </div>`).join('')}
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="_addStageRow()"><i class="ic ic-plus"></i> إضافة مرحلة</button>
+      <div style="margin-top:18px"><button class="btn btn-primary" onclick="saveSettingsStages()"><i class="ic ic-save"></i> حفظ المراحل</button></div>
+    </div>`;
   } else if(tab==='paymethods'){
     const pms=PAY_METHODS(true);
     const ICS=['money','card','bank','receipt','wallet','link','mobile','file'];
@@ -6241,6 +6302,7 @@ hr(){
           <option value="branch" ${hrSort==='branch'?'selected':''}> الفرع</option>
         </select>
         <button class="btn btn-primary" onclick="Modals.addHrEmployee()">+ إضافة موظف</button>
+        <button class="btn btn-secondary" onclick="openImport('staff')"><i class="ic ic-upload"></i> استيراد Excel</button>
         <button class="btn btn-secondary" onclick="genAllPins()" title="توليد رمز سري عشوائي لكل موظف بدون رمز"><i class="ic ic-dice"></i> توليد رموز التحضير</button>
         <button class="btn btn-secondary" onclick="genAllAccounts()" title="إنشاء حساب دخول لكل موظف بدون حساب"><i class="ic ic-key"></i> إنشاء حسابات الدخول</button>
       </div>
@@ -6775,7 +6837,7 @@ const Modals = {
           <div class="input-group"><label>هاتف ولي الأمر *</label><input class="input" id="c-phone" placeholder="05xxxxxxxx"></div>
         </div>
         <div class="grid-2">
-          <div class="input-group"><label>الصف</label><input class="input" id="c-grade" placeholder="KG1 / KG2"></div>
+          <div class="input-group"><label>المرحلة</label><select class="input" id="c-grade">${stageOptions('')}</select></div>
           <div class="input-group"><label>تاريخ الانتساب</label><input class="input" id="c-join" type="date" value="${T0}"></div>
         </div>
         <div class="input-group"><label>ملاحظات صحية</label><textarea class="input" id="c-notes" rows="2" placeholder="حساسية، حالة صحية..."></textarea></div>
@@ -6794,24 +6856,19 @@ const Modals = {
         <div style="font-size:13px;font-weight:700;color:#1d4ed8;padding:8px 12px;background:#f0fdf4;border-radius:8px;margin:0 0 14px"><i class="ic ic-card"></i> الاشتراك والدفع</div>
 
         <div class="grid-2">
-          <div class="input-group">
-            <label>مدة الاشتراك *</label>
-            <select class="input" id="c-sub-type" onchange="calcChildSubPrice()">
-              ${planOptions('')}<option value="custom">مخصص</option>
-            </select>
-            <div id="c-custom-days-wrap" style="display:none;margin-top:8px">
-              <input class="input" id="c-sub-custom-days" type="number" min="1" max="365" value="15" placeholder="عدد الأيام" oninput="calcChildSubPrice()">
-              <small style="color:#64748b;font-size:12px">السعر يُحسب تلقائياً بنسبة من سعر ٣٠ يوم</small>
-            </div>
+          <div>
+            ${durationBlock({prefix:'c-sub',type:'c-sub-type',months:'c-sub-months',days:'c-sub-days',mode:'c-sub-dur-mode',calc:'calcChildSubPrice'},
+              {planOptions:planOptions('')+'<option value="custom">مخصص</option>'})}
           </div>
           <div class="input-group"><label>تاريخ البداية</label><input class="input" id="c-sub-start" type="date" value="${T0}" onchange="calcChildSubPrice()"></div>
         </div>
         <div class="grid-2">
-          <div class="input-group"><label>تاريخ الانتهاء</label><input class="input" id="c-sub-end" type="date" value="${addDays(T0,30)}"></div>
+          <div class="input-group"><label>تاريخ الانتهاء</label><input class="input" id="c-sub-end" type="date" value="${addDays(T0,30)}" onchange="calcChildSubPrice(false)"></div>
           <div class="input-group">
             <label>المبلغ بعد الخصم (ر.س)</label>
             <div style="display:flex;gap:6px;align-items:center">
-              <input class="input" id="c-sub-price" type="number" value="1800" oninput="syncPaidAmount('c-sub-price','c-sub-paid')" style="flex:1">
+              <input class="input" id="c-sub-price" type="number" value="1800" oninput="this.dataset.manual='1';syncPaidAmount('c-sub-price','c-sub-paid')" style="flex:1">
+              <button type="button" class="btn btn-secondary btn-xs" title="إعادة الحساب من الباقة" onclick="const e=document.getElementById('c-sub-price');delete e.dataset.manual;calcChildSubPrice(false)"><i class="ic ic-refresh"></i></button>
               <span id="c-base-hint" style="font-size:11px;color:#94a3b8;white-space:nowrap"></span> </div>
           </div>
         </div>
@@ -6831,6 +6888,7 @@ const Modals = {
           ${pmButtons('c-sub-pm')}
         </div>
         ${receiptField('c-receipt-file','c-receipt-data','c-receipt-preview')}
+        <img src="__none__" style="display:none" onerror="setTimeout(()=>calcChildSubPrice(),0)">
 
       </div>
       <div class="modal-footer">
@@ -6876,7 +6934,7 @@ const Modals = {
           <div class="input-group"><label>الهاتف</label><input class="input" id="c-phone" value="${esc(c.parentPhone)}"></div>
         </div>
         <div class="grid-2">
-          <div class="input-group"><label>الصف</label><input class="input" id="c-grade" value="${esc(c.grade||'')}"></div>
+          <div class="input-group"><label>المرحلة</label><select class="input" id="c-grade">${stageOptions(c.grade||'')}</select></div>
           <div class="input-group"><label>تاريخ الانتساب</label><input class="input" id="c-join" type="date" value="${c.joinDate}"></div>
         </div>
         <div class="input-group"><label><i class="ic ic-stethoscope"></i> الملاحظات الصحية والطبية</label><textarea class="input" id="c-health" rows="2" placeholder="حساسيات، أمراض مزمنة، أدوية...">${esc(c.healthNotes||'')}</textarea></div>
@@ -6967,9 +7025,13 @@ const Modals = {
   addSub(childId){
     const c=DB.children().find(x=>x.id===childId);
     if(!c) return;
-    const period=c.period||'evening';
+    const period=c.period||defaultPeriodKey();
     const p=getSubPrices(c.branchId)[period]||{};
     const periodLabel=periodTagFull(period);
+    // التجديد: نقترح المتابعة من اليوم التالي لآخر اشتراك، وإلا نبدأ اليوم
+    const lastSub=DB.subscriptions().filter(x=>x.childId===childId&&x.endDate)
+      .sort((a,b)=>String(a.endDate).localeCompare(String(b.endDate))).pop();
+    const startDefault=(lastSub&&lastSub.endDate>=T0)?addDays(lastSub.endDate,1):T0;
     App.showModal(`
     <div class="modal-overlay" onclick="if(event.target===this)App.closeModal()">
     <div class="modal">
@@ -6985,27 +7047,27 @@ const Modals = {
           <div><div style="font-size:11px;color:#64748b">الفرع</div><div style="font-weight:700">${DB.branchName(c.branchId)}</div></div>
           ${c.isVip?`<div><div style="font-size:11px;color:#64748b">التصنيف</div><div style="font-weight:700;color:#d97706"><i class="ic ic-star"></i> عميل مميز</div></div>`:''}
         </div>
-        <div class="input-group">
-          <label>مدة الاشتراك *</label>
-          <select class="input" id="sub-type" onchange="calcEndDate()">
-            ${planOptions('',c.branchId,period)}<option value="custom">مخصص</option>
-          </select>
-          <div id="sub-custom-days-wrap" style="display:none;margin-top:8px">
-            <input class="input" id="sub-custom-days" type="number" min="1" max="365" value="15" placeholder="عدد الأيام" oninput="calcEndDate()">
-            <small style="color:#64748b;font-size:12px">السعر يُحسب تلقائياً بنسبة من سعر ٣٠ يوم</small>
-          </div>
-        </div>
+        ${durationBlock({prefix:'sub',type:'sub-type',months:'sub-months',days:'sub-days',mode:'sub-dur-mode',calc:'calcEndDate'},
+          {planOptions:planOptions('',c.branchId,period)+'<option value="custom">مخصص</option>'})}
+        ${lastSub?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;margin-bottom:12px">
+          <span style="font-size:12.5px;color:#1e40af">آخر اشتراك انتهى في <strong>${formatDate(lastSub.endDate)}</strong></span>
+          <button type="button" class="btn btn-secondary btn-xs" onclick="setSubStart('${addDays(lastSub.endDate,1)}')">متابعة من اليوم التالي له</button>
+          <button type="button" class="btn btn-secondary btn-xs" onclick="setSubStart('${T0}')">البدء من اليوم</button>
+        </div>`:''}
         <div class="grid-2">
-          <div class="input-group"><label>تاريخ البداية *</label><input class="input" id="sub-start" type="date" value="${T0}" onchange="calcEndDate()"></div>
-          <div class="input-group"><label>تاريخ الانتهاء</label><input class="input" id="sub-end" type="date" value="${addDays(T0,30)}"></div>
+          <div class="input-group"><label>تاريخ البداية *</label><input class="input" id="sub-start" type="date" value="${startDefault}" onchange="calcEndDate()"></div>
+          <div class="input-group"><label>تاريخ الانتهاء</label><input class="input" id="sub-end" type="date" value="${addDays(startDefault,30)}" onchange="calcEndDate(false)"></div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fefce8;border-radius:8px;margin-bottom:14px;border:1px solid #fde68a">
           <span style="font-size:13px;font-weight:600">نسبة الخصم %</span> <input class="input" id="sub-disc" type="number" min="0" max="100" value="${c.discountPct||0}" style="width:80px" oninput="calcEndDate(false)">
-          <span style="font-size:12px;color:#64748b">السعر الأساسي: <strong id="sub-base-label">${p.monthly} ر.س</strong></span> </div>
+          <span style="font-size:12px;color:#64748b">السعر الأساسي: <strong id="sub-base-label">—</strong></span> </div>
         <div class="grid-2">
           <div class="input-group">
             <label>المبلغ بعد الخصم (ر.س)</label>
-            <input class="input" id="sub-price" type="number" value="${Math.round(p.monthly*(1-(c.discountPct||0)/100))}" oninput="syncPaidAmount('sub-price','sub-paid')">
+            <div style="display:flex;gap:6px;align-items:center">
+              <input class="input" id="sub-price" type="number" value="0" oninput="this.dataset.manual='1';syncPaidAmount('sub-price','sub-paid')" style="flex:1">
+              <button type="button" class="btn btn-secondary btn-xs" title="إعادة الحساب من الباقة" onclick="const e=document.getElementById('sub-price');delete e.dataset.manual;calcEndDate(false)"><i class="ic ic-refresh"></i></button>
+            </div>
           </div>
           <div class="input-group"><label>المبلغ المدفوع (ر.س)</label><input class="input" id="sub-paid" type="number" value="${Math.round(p.monthly*(1-(c.discountPct||0)/100))}"></div>
         </div>
@@ -7022,6 +7084,7 @@ const Modals = {
           ${pmButtons('sub-pm')}
         </div>
         ${receiptField('sub-receipt-file','sub-receipt-data','sub-receipt-preview')}
+        <img src="__none__" style="display:none" onerror="setTimeout(()=>calcEndDate(),0)">
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="saveSub()">حفظ الاشتراك</button>
@@ -7465,35 +7528,7 @@ const Modals = {
     </div></div>`);
   },
 
-  importChildren(){
-    const branches=DB.branches();
-    App.showModal(`
-    <div class="modal-overlay" onclick="if(event.target===this)App.closeModal()">
-    <div class="modal" style="max-width:640px">
-      <div class="modal-header"><h2><i class="ic ic-download"></i> استيراد أطفال من Excel</h2><button class="close-btn" onclick="App.closeModal()">✕</button></div>
-      <div class="modal-body">
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:16px">
-          <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:8px"><i class="ic ic-clipboard"></i> تعليمات الاستيراد</div>
-          <ul style="font-size:13px;color:#166534;line-height:2.2;padding-right:18px;margin:0">
-            <li>حمّل القالب وافتحه في Excel أو Google Sheets</li>
-            <li>أعمدة مطلوبة: <strong>الاسم، اسم ولي الأمر، هاتف ولي الأمر</strong></li>
-            <li>الفرع: <strong>الفرع الرئيسي</strong> أو <strong>الفرع الثاني</strong></li>
-            <li>الفترة: <strong>صباحية</strong> أو <strong>مسائية</strong></li>
-          </ul>
-          <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="downloadChildTemplate()"><i class="ic ic-download"></i> تحميل القالب (CSV)</button>
-        </div>
-        <div class="input-group">
-          <label><i class="ic ic-paperclip"></i> اختر ملف Excel (.xlsx) أو CSV</label>
-          <input class="input" type="file" id="import-file-input" accept=".xlsx,.xls,.csv" onchange="previewImport(this)">
-        </div>
-        <div id="import-preview"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="confirm-import-btn" onclick="confirmChildImport()" style="display:none"><i class="ic ic-check"></i> استيراد البيانات</button>
-        <button class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
-      </div>
-    </div></div>`);
-  },
+
 
   addUser(){
     const schools=DB.schools();
@@ -8187,13 +8222,25 @@ async function renderProviderArea(){
   const root=document.getElementById('app');
   if(!Provider.token){root.innerHTML=Views.providerLogin();return;}
   root.innerHTML=`<div style="padding:60px;text-align:center;color:#64748b"><i class="ic ic-hourglass"></i> جاري التحميل...</div>`;
+  let tenants;
   try{
-    const [tenants,packages]=await Promise.all([Provider.listTenants(),Provider.listPackages()]);
-    PV_TENANTS=tenants; PV_PACKAGES=packages;
-    root.innerHTML=Views.providerDashboard(tenants);
+    tenants=await Provider.listTenants();          // هذه وحدها هي التي تتحقّق من المفتاح
   }catch(e){
+    const m=String(e&&e.message||'');
     Provider.token='';
-    root.innerHTML=Views.providerLogin('تعذّر تسجيل الدخول — تحقّقي من المفتاح');
+    root.innerHTML=Views.providerLogin(
+      /401|403/.test(m) ? 'المفتاح غير صحيح — تأكّدي من نسخه كاملاً بلا مسافات'
+      : /404/.test(m)   ? 'الخادم لا يتعرّف على هذا المسار — أعيدي تشغيل خدمة الواجهة على السيرفر (systemctl restart madar-new-api)'
+      : 'تعذّر الوصول إلى الخادم — تحقّقي من الاتصال ثم أعيدي المحاولة');
+    return;
+  }
+  PV_TENANTS=tenants;
+  // الباقات إضافية: فشلها (خادم قديم مثلاً) يجب ألا يمنع الدخول
+  try{ PV_PACKAGES=await Provider.listPackages(); }
+  catch(e){ PV_PACKAGES=[]; }
+  root.innerHTML=Views.providerDashboard(tenants);
+  if(!PV_PACKAGES.length){
+    setTimeout(()=>toast('تعذّر تحميل الباقات — إن كانت الخدمة على السيرفر قديمة، أعيدي تشغيلها بأمر systemctl restart madar-new-api','warn'),400);
   }
 }
 function pvGoTab(t){ PV_TAB=t; document.getElementById('app').innerHTML=Views.providerDashboard(PV_TENANTS); }
@@ -8242,7 +8289,8 @@ async function pvSavePackages(){
     toast('<i class="ic ic-check"></i> تم حفظ الباقات');
     pvGoTab('packages');
   }catch(e){
-    toast('تعذّر الحفظ: '+(e.message||''),'error');
+    const m=String(e&&e.message||'');
+    toast(/404/.test(m)?'الخادم لا يدعم الباقات بعد — أعيدي تشغيل الخدمة: systemctl restart madar-new-api':('تعذّر الحفظ: '+m),'error');
   }
 }
 function doProviderLogin(){
@@ -8581,6 +8629,88 @@ function _staffRecord(emp,kind,lat,lng,dist){
   const pinEl=document.getElementById('sc-pin');if(pinEl)pinEl.value='';
 }
 
+// ===== مدة الاشتراك: باقة جاهزة أو أشهر أو أيام أو تاريخ محدّد =====
+function addMonths(dateStr,n){
+  if(!dateStr) return dateStr;
+  const [y,m,d]=dateStr.split('-').map(Number);
+  const base=new Date(Date.UTC(y,m-1,d));
+  const day=base.getUTCDate();
+  base.setUTCDate(1);
+  base.setUTCMonth(base.getUTCMonth()+(+n||0));
+  const last=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+1,0)).getUTCDate();
+  base.setUTCDate(Math.min(day,last));
+  return base.toISOString().slice(0,10);
+}
+function daysBetween(a,b){
+  if(!a||!b) return 0;
+  return Math.round((new Date(b+'T00:00:00Z')-new Date(a+'T00:00:00Z'))/86400000);
+}
+// كتلة اختيار المدة المستخدمة في كل شاشات الاشتراك
+function durationBlock(ids,opts){
+  opts=opts||{};
+  const mode=opts.mode||'plan';
+  return `
+  <div class="input-group">
+    <label>مدة الاشتراك *</label>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      ${[['plan','باقة جاهزة'],['months','عدد أشهر'],['days','عدد أيام'],['date','تاريخ محدّد']]
+        .map(([k,l])=>`<span class="chip ${mode===k?'active':''}" data-dm="${k}" onclick="setDurMode('${ids.prefix}','${k}')">${l}</span>`).join('')}
+    </div>
+    <div id="${ids.prefix}-dur-plan">
+      <select class="input" id="${ids.type}" onchange="${ids.calc}()">
+        ${opts.planOptions||''}
+      </select>
+    </div>
+    <div id="${ids.prefix}-dur-months" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input class="input" id="${ids.months}" type="number" min="1" max="60" value="${opts.months||3}" style="max-width:120px" oninput="${ids.calc}()">
+        <span style="font-size:13px;color:#64748b">شهر — يُحسب تاريخ الانتهاء بنفس اليوم من الشهر</span>
+      </div>
+    </div>
+    <div id="${ids.prefix}-dur-days" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input class="input" id="${ids.days}" type="number" min="1" max="1095" value="${opts.days||15}" style="max-width:120px" oninput="${ids.calc}()">
+        <span style="font-size:13px;color:#64748b">يوم</span>
+      </div>
+    </div>
+    <div id="${ids.prefix}-dur-date" style="display:none">
+      <div style="font-size:12.5px;color:#64748b">حدّدي تاريخ الانتهاء بالأسفل مباشرة — والمدة تُحسب تلقائياً.</div>
+    </div>
+    <input type="hidden" id="${ids.mode}" value="${mode}">
+    <div id="${ids.prefix}-dur-hint" style="font-size:12px;color:#1d4ed8;font-weight:700;margin-top:7px"></div>
+  </div>`;
+}
+function setSubStart(d){
+  const el=document.getElementById('sub-start');
+  if(el){ el.value=d; calcEndDate(); }
+}
+function setDurMode(prefix,mode){
+  const hid=document.getElementById(prefix+'-dur-mode');
+  if(hid) hid.value=mode;
+  ['plan','months','days','date'].forEach(k=>{
+    const el=document.getElementById(prefix+'-dur-'+k);
+    if(el) el.style.display=(k===mode)?'':'none';
+  });
+  document.querySelectorAll(`[data-dm]`).forEach(c=>{
+    if(c.closest('.input-group')?.querySelector('#'+CSS.escape(prefix+'-dur-mode')))
+      c.classList.toggle('active',c.dataset.dm===mode);
+  });
+  (prefix==='c-sub'?calcChildSubPrice:calcEndDate)();
+}
+// يحسب تاريخ الانتهاء وعدد الأيام حسب الوضع المختار
+function resolveDuration(prefix,startDate){
+  const g=id=>document.getElementById(id);
+  const mode=g(prefix+'-dur-mode')?.value||'plan';
+  const typeEl=g(prefix==='c-sub'?'c-sub-type':'sub-type');
+  const endEl=g(prefix==='c-sub'?'c-sub-end':'sub-end');
+  let end=endEl?.value||'', planId=typeEl?.value||'custom', days=0;
+  if(mode==='plan'){ end=planEndDate(startDate,planId,0); }
+  else if(mode==='months'){ const n=Math.max(1,+(g(prefix+'-months')?.value||1)); end=addMonths(startDate,n); planId='custom'; }
+  else if(mode==='days'){ const n=Math.max(1,+(g(prefix+'-days')?.value||1)); end=addDays(startDate,n); planId='custom'; }
+  else { planId='custom'; }
+  days=Math.max(1,daysBetween(startDate,end));
+  return {mode,planId,end,days};
+}
 function getSubPrices(branchId){
   // خريطة {فترة: {باقة: سعر}} مبنية من الفترات وباقات الرسوم التي عرّفتها المدرسة
   const out={};
@@ -8614,51 +8744,50 @@ function planPerDay(prices){
 }
 
 function calcEndDate(recalcEnd=true){
-  const type=document.getElementById('sub-type')?.value;
-  const start=document.getElementById('sub-start')?.value;
-  const end=document.getElementById('sub-end');
-  const period=document.getElementById('sub-period')?.value||defaultPeriodKey();
-  const cdWrap=document.getElementById('sub-custom-days-wrap');
-  if(cdWrap) cdWrap.style.display=type==='custom'?'block':'none';
-  if(!type||!start||!end) return;
-  const customDays=parseInt(document.getElementById('sub-custom-days')?.value||15);
-  if(recalcEnd) end.value=planEndDate(start,type,customDays);
+  const g=id=>document.getElementById(id);
+  const start=g('sub-start')?.value;
+  const endEl=g('sub-end');
+  if(!start||!endEl) return;
+  const d=resolveDuration('sub',start);
+  if(recalcEnd&&d.mode!=='date') endEl.value=d.end;
+  const days=Math.max(1,daysBetween(start,endEl.value));
+  const hint=g('sub-dur-hint');
+  if(hint) hint.textContent=`المدة: ${days} يوم — من ${formatDate(start)} إلى ${formatDate(endEl.value)}`;
 
-  const priceEl=document.getElementById('sub-price');
-  const paidEl=document.getElementById('sub-paid');
-  const baseLabel=document.getElementById('sub-base-label');
-  const branchId=document.getElementById('sub-branch-id')?.value||'';
+  const period=g('sub-period')?.value||defaultPeriodKey();
+  const branchId=g('sub-branch-id')?.value||'';
   const prices=getSubPrices(branchId)[period]||{};
-  const base=planBasePrice(prices,type,customDays);
-  const disc=parseFloat(document.getElementById('sub-disc')?.value||0);
+  const base=(d.mode==='plan')?planBasePrice(prices,d.planId,days):planBasePrice(prices,'custom',days);
+  const disc=parseFloat(g('sub-disc')?.value||0);
   const final=disc>0?Math.round(base*(1-disc/100)):base;
+  const baseLabel=g('sub-base-label');
   if(baseLabel) baseLabel.textContent=base+' ر.س';
-  if(priceEl){priceEl.value=final;if(paidEl)paidEl.value=final;}
+  const priceEl=g('sub-price'), paidEl=g('sub-paid');
+  // لا نكتب فوق سعر عدّله المستخدم يدوياً
+  if(priceEl&&!priceEl.dataset.manual){ priceEl.value=final; if(paidEl) paidEl.value=final; }
 }
 
 function calcChildSubPrice(recalcEnd=true){
-  const type=document.getElementById('c-sub-type')?.value;
-  const start=document.getElementById('c-sub-start')?.value;
-  const period=document.getElementById('c-period')?.value||defaultPeriodKey();
-  const endEl=document.getElementById('c-sub-end');
-  const cdWrap=document.getElementById('c-custom-days-wrap');
-  if(cdWrap) cdWrap.style.display=type==='custom'?'block':'none';
-  const customDays=parseInt(document.getElementById('c-sub-custom-days')?.value||15);
-  if(recalcEnd&&type&&start&&endEl) endEl.value=planEndDate(start,type,customDays);
+  const g=id=>document.getElementById(id);
+  const start=g('c-sub-start')?.value;
+  const endEl=g('c-sub-end');
+  if(!start||!endEl) return;
+  const d=resolveDuration('c-sub',start);
+  if(recalcEnd&&d.mode!=='date') endEl.value=d.end;
+  const days=Math.max(1,daysBetween(start,endEl.value));
+  const hint=g('c-sub-dur-hint');
+  if(hint) hint.textContent=`المدة: ${days} يوم — من ${formatDate(start)} إلى ${formatDate(endEl.value)}`;
 
-  const priceEl=document.getElementById('c-sub-price');
-  const paidEl=document.getElementById('c-sub-paid');
-  const hintEl=document.getElementById('c-base-hint');
-  if(priceEl&&type){
-    const branchId=document.getElementById('c-branch')?.value||'';
-    const prices=getSubPrices(branchId)[period]||{};
-    const base=planBasePrice(prices,type,customDays);
-    const disc=parseFloat(document.getElementById('c-disc')?.value||0);
-    const final=disc>0?Math.round(base*(1-disc/100)):base;
-    if(hintEl) hintEl.textContent=disc>0?`أصل: ${base} ر.س`:(type==='custom'?`${planPerDay(prices)} ر.س/يوم`:'');
-    priceEl.value=final;
-    if(paidEl) paidEl.value=final;
-  }
+  const period=g('c-period')?.value||defaultPeriodKey();
+  const branchId=g('c-branch')?.value||'';
+  const prices=getSubPrices(branchId)[period]||{};
+  const base=(d.mode==='plan')?planBasePrice(prices,d.planId,days):planBasePrice(prices,'custom',days);
+  const disc=parseFloat(g('c-disc')?.value||0);
+  const final=disc>0?Math.round(base*(1-disc/100)):base;
+  const baseHint=g('c-base-hint');
+  if(baseHint) baseHint.textContent=disc>0?`أصل: ${base} ر.س`:(d.mode!=='plan'?`${planPerDay(prices)} ر.س/يوم`:'');
+  const priceEl=g('c-sub-price'), paidEl=g('c-sub-paid');
+  if(priceEl&&!priceEl.dataset.manual){ priceEl.value=final; if(paidEl) paidEl.value=final; }
 }
 
 function syncPaidAmount(srcId,tgtId){
@@ -9557,15 +9686,16 @@ function saveChild(edit=false){
     const subPay=document.getElementById('c-sub-pay')?.value||'paid';
     if(subType&&subPrice>0){
       const subEnd=document.getElementById('c-sub-end')?.value||addDays(subStart,30);
-      const subCustomDays=subType==='custom'?parseInt(document.getElementById('c-sub-custom-days')?.value||15):undefined;
+      const _cd=resolveDuration('c-sub',subStart);
+      const subCustomDays=(_cd.mode==='plan')?undefined:Math.max(1,daysBetween(subStart,subEnd));
       const allSubs=DB.subscriptions();
       const maxNum=allSubs.reduce((m,s)=>{const n=parseInt((s.invoiceNo||'').replace(/^[A-Za-z]+-/,''));return isNaN(n)?m:Math.max(m,n);},0);
       const invoiceNo=(DB.settings().invoicePrefix||'INV')+'-'+(maxNum+1).toString().padStart(4,'0');
       const cPrices=getSubPrices(c.branchId)[period]||{};
-      const basePrice=planBasePrice(cPrices,subType,subCustomDays||15)||subPrice;
+      const basePrice=planBasePrice(cPrices,(_cd.mode==='plan'?subType:'custom'),subCustomDays||15)||subPrice;
       const subPM=document.getElementById('c-sub-pm')?.value||defaultPayKey();
       const subReceipt=document.getElementById('c-receipt-data')?.value||'';
-      DB.addSub({id:uid(),childId,schoolId,branchId:c.branchId,period,type:subType,customDays:subCustomDays,startDate:subStart,endDate:subEnd,basePrice,discountPct:parseFloat(document.getElementById('c-disc')?.value||0),price:subPrice,paidAmount:subPaid,paymentStatus:subPay,paymentMethod:subPM,receiptImage:subReceipt,isActive:true,createdAt:T0,invoiceNo});
+      DB.addSub({id:uid(),childId,schoolId,branchId:c.branchId,period,type:(_cd.mode==='plan'?subType:'custom'),customDays:subCustomDays,startDate:subStart,endDate:subEnd,basePrice,discountPct:parseFloat(document.getElementById('c-disc')?.value||0),price:subPrice,paidAmount:subPaid,paymentStatus:subPay,paymentMethod:subPM,receiptImage:subReceipt,isActive:true,createdAt:T0,invoiceNo});
       if(Auth.user) DB.addNotification({type:'new_sub',title:'<i class="ic ic-clipboard"></i> اشتراك جديد',body:`اشتراك ${planName(subType)} لـ ${name} — ${subPrice} ر.س | الدفع: ${payTag(subPM)} | ${subPay==='paid'?'مدفوع بالكامل':subPay==='partial'?'مدفوع جزئياً':'مؤجل'}`,branchId:c.branchId,period:period,addedBy:Auth.user.name,addedById:Auth.user.id});
     }
   }
@@ -9582,7 +9712,7 @@ function saveSub(){
   const childId=document.getElementById('sub-child')?.value;
   const schoolId=document.getElementById('sub-school')?.value;
   const period=document.getElementById('sub-period')?.value||defaultPeriodKey();
-  const type=document.getElementById('sub-type')?.value;
+  let type=document.getElementById('sub-type')?.value;
   const startDate=document.getElementById('sub-start')?.value;
   const endDate=document.getElementById('sub-end')?.value;
   const price=parseFloat(document.getElementById('sub-price')?.value||0);
@@ -9594,7 +9724,9 @@ function saveSub(){
   const maxNum=allSubs.reduce((m,s)=>{const n=parseInt((s.invoiceNo||'').replace(/^[A-Za-z]+-/,''));return isNaN(n)?m:Math.max(m,n);},0);
   const invoiceNo=(DB.settings().invoicePrefix||'INV')+'-'+(maxNum+1).toString().padStart(4,'0');
   const discPct=parseFloat(document.getElementById('sub-disc')?.value||0);
-  const customDays=type==='custom'?parseInt(document.getElementById('sub-custom-days')?.value||15):undefined;
+  const _d=resolveDuration('sub',startDate);
+  const customDays=(_d.mode==='plan')?undefined:Math.max(1,daysBetween(startDate,endDate));
+  if(_d.mode!=='plan') type='custom';
   const prices=getSubPrices(child?.branchId)[period]||{};
   const basePrice=planBasePrice(prices,type,customDays||15)||price;
   const paymentMethod=document.getElementById('sub-pm')?.value||defaultPayKey();
@@ -9753,6 +9885,43 @@ function saveSettingsPeriods(){
   s.periods=list;
   DB.saveSettings(s);
   showSettingsToast('تم حفظ فترات العمل');
+  App.refresh();
+}
+function _addStageRow(){
+  const wrap=document.getElementById('st-rows'); if(!wrap) return;
+  const n=wrap.querySelectorAll('.st-row').length+1;
+  const d=document.createElement('div');
+  d.className='pr-row st-row';
+  d.style.cssText='display:grid;grid-template-columns:1fr 110px 90px 40px;gap:10px;align-items:end;margin-bottom:10px';
+  d.innerHTML='<div class="input-group" style="margin:0"><label>اسم المرحلة</label><input class="input st-name" placeholder="مثال: الصف الأول"></div>'
+    +'<div class="input-group" style="margin:0"><label>الترتيب</label><input class="input st-order" type="number" min="1" value="'+n+'"></div>'
+    +'<div class="input-group" style="margin:0"><label>مفعّلة</label><select class="input st-active"><option value="1">نعم</option><option value="0">لا</option></select></div>'
+    +'<button class="btn btn-danger btn-sm" style="margin-bottom:2px" onclick="_removeStageRow(this)"><i class="ic ic-trash"></i></button>';
+  wrap.appendChild(d);
+}
+function _removeStageRow(btn){
+  const row=btn.closest('.st-row'); if(!row) return;
+  const k=row.dataset.k;
+  if(k){
+    const used=DB.children().filter(c=>c.grade===k).length;
+    if(used&&!confirm(`هذه المرحلة مسجّلة على ${used} طالب. حذفها لن يحذفهم لكن ستظهر مرحلتهم فارغة. المتابعة؟`)) return;
+  }
+  row.remove();
+}
+function saveSettingsStages(){
+  if(!Auth.isSuperAdmin()) return;
+  const st=DB.settings();
+  const taken=new Set();
+  const list=[...document.querySelectorAll('#st-rows .st-row')].map((r,i)=>{
+    const name=(r.querySelector('.st-name')?.value||'').trim();
+    if(!name) return null;
+    const k=r.dataset.k||_slugKey(name,taken);
+    taken.add(k);
+    return {k,name,order:+(r.querySelector('.st-order')?.value||i+1),active:r.querySelector('.st-active')?.value==='1'};
+  }).filter(Boolean);
+  st.stages=list;
+  DB.saveSettings(st);
+  showSettingsToast('تم حفظ المراحل الدراسية');
   App.refresh();
 }
 function _addPayRow(){
@@ -10264,6 +10433,247 @@ function downloadChildTemplate(){
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
+// =========================================================
+//  استيراد البيانات من Excel / CSV — للانتقال من نظام سابق
+// =========================================================
+const IMPORT_TYPES={
+  children:{
+    title:'الطلاب',icon:'child',
+    hint:'الأعمدة المطلوبة: اسم الطالب، اسم ولي الأمر، جوال ولي الأمر. الباقي اختياري.',
+    cols:[
+      {k:'name',label:'اسم الطالب',req:true},
+      {k:'parentName',label:'اسم ولي الأمر'},
+      {k:'parentPhone',label:'جوال ولي الأمر'},
+      {k:'branch',label:'الفرع'},
+      {k:'period',label:'الفترة'},
+      {k:'stage',label:'المرحلة'},
+      {k:'joinDate',label:'تاريخ الانتساب'},
+      {k:'notes',label:'ملاحظات صحية'},
+    ],
+    sample:['أحمد محمد العتيبي','أم أحمد','0551234567','الفرع الرئيسي','صباحي','روضة أولى (KG1)','2026-09-01','حساسية فول سوداني'],
+  },
+  staff:{
+    title:'المعلمات والموظفون',icon:'users',
+    hint:'الأعمدة المطلوبة: الاسم، المسمى الوظيفي. الرواتب والتواريخ اختيارية.',
+    cols:[
+      {k:'name',label:'الاسم',req:true},
+      {k:'jobTitle',label:'المسمى الوظيفي',req:true},
+      {k:'phone',label:'الجوال'},
+      {k:'branch',label:'الفرع'},
+      {k:'nationality',label:'الجنسية'},
+      {k:'nationalId',label:'رقم الهوية / الإقامة'},
+      {k:'contractStart',label:'تاريخ المباشرة'},
+      {k:'contractEnd',label:'نهاية العقد'},
+      {k:'basicSalary',label:'الراتب الأساسي'},
+      {k:'housing',label:'بدل السكن'},
+      {k:'transport',label:'بدل النقل'},
+    ],
+    sample:['نورة سعد القحطاني','معلمة','0559876543','الفرع الرئيسي','سعودية','1012345678','2026-08-01','2027-07-31','4500','500','300'],
+  },
+  finance:{
+    title:'السجلات المالية',icon:'receipt',
+    hint:'كل سطر إما إيراد أو مصروف. الأعمدة المطلوبة: التاريخ، النوع، المبلغ.',
+    cols:[
+      {k:'date',label:'التاريخ',req:true},
+      {k:'kind',label:'النوع (إيراد / مصروف)',req:true},
+      {k:'amount',label:'المبلغ',req:true},
+      {k:'category',label:'التصنيف'},
+      {k:'description',label:'البيان'},
+      {k:'branch',label:'الفرع'},
+      {k:'payMethod',label:'طريقة الدفع'},
+    ],
+    sample:['2026-08-15','مصروف','1200','رواتب','راتب شهر أغسطس','الفرع الرئيسي','حوالة بنكية'],
+  },
+};
+let _impType='children', _impRows=[], _impErrors=[];
+
+function openImport(type){
+  _impType=type||'children'; _impRows=[]; _impErrors=[];
+  const t=IMPORT_TYPES[_impType];
+  App.showModal(`
+  <div class="modal-overlay" onclick="if(event.target===this)App.closeModal()">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header"><h2><i class="ic ic-upload"></i> استيراد ${t.title} من Excel</h2><button class="close-btn" onclick="App.closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        ${Object.entries(IMPORT_TYPES).map(([k,v])=>`<span class="chip ${k===_impType?'active':''}" onclick="openImport('${k}')"><i class="ic ic-${v.icon}"></i> ${v.title}</span>`).join('')}
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:8px"><i class="ic ic-bulb"></i> كيف تنقلين بياناتك</div>
+        <ol style="font-size:12.5px;color:#1e40af;line-height:2.1;padding-right:18px;margin:0">
+          <li>حمّلي القالب — فيه الأعمدة بالترتيب الصحيح وسطر مثال</li>
+          <li>الصقي بياناتك من نظامك السابق مكان سطر المثال (احذفيه)</li>
+          <li>احفظي الملف ثم ارفعيه هنا — ستظهر لك معاينة قبل الاستيراد</li>
+        </ol>
+        <div style="font-size:12px;color:#1e40af;margin-top:8px">${esc(t.hint)}</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="downloadImportTemplate()"><i class="ic ic-download"></i> تحميل قالب ${esc(t.title)}</button>
+      </div>
+      <div class="input-group">
+        <label><i class="ic ic-paperclip"></i> ملف Excel (.xlsx) أو CSV</label>
+        <input class="input" type="file" id="imp-file" accept=".xlsx,.xls,.csv" onchange="handleImportFile(this)">
+      </div>
+      <div id="imp-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="imp-confirm" onclick="commitImport()" style="display:none"><i class="ic ic-check"></i> استيراد البيانات</button>
+      <button class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
+    </div>
+  </div></div>`);
+}
+
+function downloadImportTemplate(){
+  const t=IMPORT_TYPES[_impType];
+  const rows=[t.cols.map(c=>c.label), t.sample];
+  const csv='﻿'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`قالب-${t.title}.csv`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+}
+
+function handleImportFile(input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  const box=document.getElementById('imp-preview');
+  const isCSV=/\.csv$/i.test(file.name);
+  const fr=new FileReader();
+  fr.onerror=()=>{ box.innerHTML='<div class="alert-box alert-red"><i class="ic ic-alert"></i> تعذّرت قراءة الملف</div>'; };
+  fr.onload=ev=>{
+    let rows=[];
+    try{
+      if(isCSV){ rows=_parseCSV(ev.target.result); }
+      else{
+        if(typeof XLSX==='undefined'){
+          box.innerHTML='<div class="alert-box alert-yellow"><i class="ic ic-alert"></i> تعذّر تحميل قارئ Excel — احفظي الملف بصيغة CSV وأعيدي المحاولة (من Excel: حفظ باسم ← CSV UTF-8).</div>';
+          return;
+        }
+        const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:''});
+      }
+      buildImportPreview(rows);
+    }catch(e){
+      box.innerHTML=`<div class="alert-box alert-red"><i class="ic ic-alert"></i> خطأ في قراءة الملف: ${esc(e.message)}</div>`;
+    }
+  };
+  if(isCSV) fr.readAsText(file,'UTF-8'); else fr.readAsArrayBuffer(file);
+}
+
+function buildImportPreview(rows){
+  const t=IMPORT_TYPES[_impType];
+  const box=document.getElementById('imp-preview');
+  const btn=document.getElementById('imp-confirm');
+  _impRows=[]; _impErrors=[];
+  if(!rows||rows.length<2){
+    box.innerHTML='<div class="alert-box alert-red"><i class="ic ic-alert"></i> الملف فارغ أو لا يحتوي بيانات تحت سطر العناوين</div>';
+    btn.style.display='none'; return;
+  }
+  rows.slice(1).forEach((r,i)=>{
+    if(!r||!r.filter(x=>String(x||'').trim()).length) return;   // سطر فارغ
+    const o={}; t.cols.forEach((c,ci)=>{ o[c.k]=String(r[ci]==null?'':r[ci]).trim(); });
+    if(t.cols.some(c=>c.req&&!o[c.k])) return;                  // ناقص حقلاً إلزامياً
+    if(String(o[t.cols[0].k]).startsWith('أحمد محمد العتيبي')||String(o[t.cols[0].k]).startsWith('نورة سعد')) return; // سطر المثال
+    const err=validateImportRow(o);
+    if(err) _impErrors.push({row:i+2,msg:err,data:o}); else _impRows.push(o);
+  });
+  if(!_impRows.length&&!_impErrors.length){
+    box.innerHTML='<div class="alert-box alert-red"><i class="ic ic-alert"></i> لم يُعثر على سطور صالحة — تأكّدي من ترتيب الأعمدة ومن حذف سطر المثال</div>';
+    btn.style.display='none'; return;
+  }
+  const show=_impRows.slice(0,50);
+  box.innerHTML=`
+    ${_impRows.length?`<div class="alert-box alert-green" style="margin-bottom:10px"><i class="ic ic-check"></i> جاهز للاستيراد: <strong>${_impRows.length}</strong> سجل${_impRows.length>50?' (تُعرض أول ٥٠)':''}</div>`:''}
+    ${_impErrors.length?`<div class="alert-box alert-yellow" style="margin-bottom:10px"><i class="ic ic-alert"></i> <strong>${_impErrors.length}</strong> سطر به مشكلة وسيُتخطّى:<br>
+      <span style="font-size:12px">${_impErrors.slice(0,6).map(e=>`سطر ${e.row}: ${esc(e.msg)}`).join('<br>')}${_impErrors.length>6?'<br>…':''}</span></div>`:''}
+    ${show.length?`<div style="overflow:auto;max-height:280px;border:1px solid #e2e8f0;border-radius:8px">
+      <table style="margin:0;font-size:12px">
+        <thead><tr><th>#</th>${t.cols.map(c=>`<th>${esc(c.label)}</th>`).join('')}</tr></thead>
+        <tbody>${show.map((r,i)=>`<tr><td style="color:#94a3b8">${i+1}</td>${t.cols.map(c=>`<td>${esc(r[c.k])||'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>`:''}`;
+  btn.style.display=_impRows.length?'':'none';
+}
+
+function validateImportRow(o){
+  if(_impType==='finance'){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(o.date)) return 'التاريخ يجب أن يكون بصيغة YYYY-MM-DD';
+    if(!(parseFloat(o.amount)>0)) return 'المبلغ غير صحيح';
+    if(!/إيراد|مصروف/.test(o.kind)) return 'النوع يجب أن يكون «إيراد» أو «مصروف»';
+  }
+  if(_impType==='staff'&&o.basicSalary&&isNaN(parseFloat(o.basicSalary))) return 'الراتب الأساسي ليس رقماً';
+  return '';
+}
+
+function _matchBranch(hint){
+  const bs=DB.branches();
+  const h=String(hint||'').trim();
+  if(!h) return bs[0]?.id||'';
+  const f=bs.find(b=>b.name===h)||bs.find(b=>b.name.includes(h)||h.includes(b.name));
+  return (f||bs[0]||{}).id||'';
+}
+function _matchPeriod(hint){
+  const h=String(hint||'').trim();
+  if(!h) return defaultPeriodKey();
+  const l=PERIODS(true);
+  const f=l.find(p=>p.k===h||p.name===h||p.short===h)||l.find(p=>p.name.includes(h)||h.includes(p.short||''));
+  return (f||{}).k||defaultPeriodKey();
+}
+function _matchPay(hint){
+  const h=String(hint||'').trim();
+  if(!h) return defaultPayKey();
+  const f=PAY_METHODS(true).find(m=>m.k===h||m.name===h||m.name.includes(h)||h.includes(m.name));
+  return (f||{}).k||defaultPayKey();
+}
+
+function commitImport(){
+  if(!_impRows.length) return;
+  const t=IMPORT_TYPES[_impType];
+  if(!confirm(`سيتم استيراد ${_impRows.length} سجل إلى ${t.title}. المتابعة؟`)) return;
+  const sid=Auth.schoolId()||DB.schools()[0]?.id||'s1';
+  let n=0;
+  if(_impType==='children'){
+    const lim=pkgLimit('maxChildren'), have=DB.children().length;
+    if(lim&&have+_impRows.length>lim){
+      toast(`باقتك تسمح بـ ${lim} طالب — لديك ${have} والملف فيه ${_impRows.length}`,'error'); return;
+    }
+    _impRows.forEach(r=>{
+      DB.addChild({id:uid(),schoolId:sid,branchId:_matchBranch(r.branch),teacherId:'',
+        period:_matchPeriod(r.period),name:r.name,parentName:r.parentName||'',parentPhone:r.parentPhone||'',
+        grade:matchStage(r.stage),joinDate:/^\d{4}-\d{2}-\d{2}$/.test(r.joinDate)?r.joinDate:T0,
+        notes:r.notes||'',isActive:true,isVip:false,discountPct:0});
+      n++;
+    });
+  } else if(_impType==='staff'){
+    _impRows.forEach(r=>{
+      DB.addHrEmployee({id:uid(),name:r.name,jobTitle:r.jobTitle,phone:r.phone||'',
+        branchId:_matchBranch(r.branch),nationality:r.nationality||'',nationalId:r.nationalId||'',
+        contractStart:/^\d{4}-\d{2}-\d{2}$/.test(r.contractStart)?r.contractStart:T0,
+        contractEnd:/^\d{4}-\d{2}-\d{2}$/.test(r.contractEnd)?r.contractEnd:'',
+        contractType:'full',basicSalary:+r.basicSalary||0,housingAllowance:+r.housing||0,
+        transportAllowance:+r.transport||0,graceMinutes:15,isActive:true,createdAt:new Date().toISOString()});
+      n++;
+    });
+  } else {
+    _impRows.forEach(r=>{
+      const amount=parseFloat(r.amount)||0;
+      const branchId=_matchBranch(r.branch);
+      const pm=_matchPay(r.payMethod);
+      if(/إيراد/.test(r.kind)){
+        DB.addSale({id:uid(),schoolId:sid,branchId,date:r.date,product:r.description||r.category||'إيراد مستورد',
+          price:amount,paymentMethod:pm,addedBy:Auth.user?.name||'استيراد',createdAt:new Date().toISOString()});
+      } else {
+        DB.addExpense({id:uid(),date:r.date,amount,category:r.category||'أخرى',description:r.description||'',
+          branchId,paymentMethod:pm,addedBy:Auth.user?.name||'استيراد',createdAt:new Date().toISOString()});
+      }
+      n++;
+    });
+  }
+  DB.addAuditLog({action:'استيراد بيانات',entity:t.title,entityId:String(n),
+    details:`تم استيراد ${n} سجل إلى ${t.title}`,by:Auth.user?.name||'—'});
+  App.closeModal();
+  toast(`<i class="ic ic-check"></i> تم استيراد ${n} سجل إلى ${t.title}`);
+  App.refresh();
+}
+
 function previewImport(input){
   const file = input.files[0];
   if(!file) return;
@@ -10479,7 +10889,7 @@ function exportAllData(){
       'الفرع':DB.branchName(c.branchId),
       'الفترة':periodLabel(c.period),
       'المعلمة':(DB.users().find(u=>u.id===c.teacherId)||{}).name||'',
-      'المرحلة':c.grade||'',
+      'المرحلة':stageName(c.grade)||'',
       'تاريخ الانضمام':c.joinDate||'',
       'حالة الاشتراك':sub?'فعال':'غير فعال',
       'ملاحظات صحية':c.healthNotes||'',
