@@ -7,10 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>مدار — إدارة المدارس من مكان واحد</title>
-<!-- BUILD: 2026-08-23-v94 -->
+<!-- BUILD: 2026-08-23-v95 -->
 <script>
 (function(){
-  var BUILD='v94-20260823-4';
+  var BUILD='v95-20260823-5';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -142,7 +142,16 @@ body{font-family:'Tajawal',sans-serif;background:#f1f5f9;color:#1e293b;direction
 .sidebar-logo p{color:rgba(255,255,255,.6);font-size:11px;margin-top:2px}
 .nav-section{padding:4px 6px;flex:1;overflow-y:auto;min-height:0}
 .nav-section::-webkit-scrollbar{width:3px}.nav-section::-webkit-scrollbar-track{background:transparent}.nav-section::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:4px}
-.nav-label{color:rgba(255,255,255,.45);font-size:10px;font-weight:700;padding:0 10px;margin:14px 0 5px;letter-spacing:.6px;text-transform:uppercase}
+.nav-label{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.55);font-size:10.5px;font-weight:700;padding:7px 10px;margin:9px 0 2px;letter-spacing:.5px;cursor:pointer;border-radius:7px;user-select:none;transition:.15s}
+.nav-label:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.8)}
+.nav-caret{margin-inline-start:auto;width:9px;height:9px;flex:none;background:currentColor;transition:transform .2s;
+  -webkit-mask:var(--caret) center/contain no-repeat;mask:var(--caret) center/contain no-repeat;
+  --caret:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")}
+.nav-group.collapsed .nav-caret{transform:rotate(-90deg)}
+.nav-items{overflow:hidden;transition:max-height .22s ease,opacity .18s;max-height:600px;opacity:1}
+.nav-group.collapsed .nav-items{max-height:0;opacity:0}
+.nav-group.collapsed .nav-label{color:rgba(255,255,255,.42)}
+.nav-dot{width:5px;height:5px;border-radius:50%;background:#60a5fa;flex:none;margin-inline-start:auto}
 .nav-group:first-child .nav-label{margin-top:4px}
 .nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;color:rgba(255,255,255,.75);cursor:pointer;border-radius:7px;margin:0;transition:.2s;font-size:13px;font-weight:500}
 .nav-item:hover,.nav-item.active{background:rgba(255,255,255,.15);color:#fff}
@@ -404,6 +413,36 @@ details[open]>summary span:last-child{transform:rotate(180deg)}
 .lp-stat-ic{width:38px;height:38px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:12px}
 .lp-stat-card b{display:block;font-size:16px;font-weight:900;color:#0f172a;margin-bottom:5px}
 .lp-stat-card span{font-size:13px;color:#64748b;line-height:1.75}
+/* خريطة الخدمات الكاملة */
+.lp-all{max-width:1180px;margin:0 auto;padding:70px 24px 10px}
+.lp-all-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-top:34px}
+.lp-all-card{background:#fff;border:1px solid #e8eefb;border-radius:18px;padding:24px 22px;transition:.2s}
+.lp-all-card:hover{box-shadow:0 14px 38px rgba(29,78,216,.09);transform:translateY(-2px)}
+.lp-all-head{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.lp-all-ic{width:40px;height:40px;border-radius:12px;background:#eff6ff;color:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.lp-all-head h3{font-size:16.5px;font-weight:900;color:#0f172a;margin:0}
+.lp-all-card ul{list-style:none;margin:0}
+.lp-all-card li{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px dashed #eef2f9}
+.lp-all-card li:first-child{border-top:none;padding-top:0}
+.lp-all-card li b{font-size:13.5px;font-weight:700;color:#1e293b}
+.lp-all-card li span{font-size:12.5px;color:#64748b;line-height:1.75}
+.lp-pkg-note{display:flex;gap:14px;align-items:flex-start;margin-top:26px;background:#f8fafc;border:1px solid #e2e8f0;border-inline-start:4px solid #1d4ed8;border-radius:14px;padding:18px 22px}
+.lp-pkg-note .ic{color:#1d4ed8;font-size:20px;flex:none;margin-top:2px}
+.lp-pkg-note div{font-size:13.5px;color:#475569;line-height:2}
+.lp-pkg-note b{color:#0f172a}
+.lp-pkg-note a{color:#1d4ed8;font-weight:800;text-decoration:none;margin-inline-start:6px;white-space:nowrap}
+.lp-pkg-note a:hover{text-decoration:underline}
+/* على مدار الساعة */
+.lp-anywhere{max-width:1180px;margin:70px auto 0;padding:44px 32px;background:linear-gradient(135deg,#1d4ed8 0%,#172554 100%);border-radius:24px;color:#fff}
+.lp-anywhere-head{text-align:center;margin-bottom:32px}
+.lp-anywhere-head h2{font-size:27px;font-weight:900;margin-bottom:8px}
+.lp-anywhere-head p{font-size:14px;opacity:.8}
+.lp-anywhere-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.lp-any-card{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:6px}
+.lp-any-ic{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:6px}
+.lp-any-card b{font-size:14.5px;font-weight:800}
+.lp-any-card span{font-size:12.5px;opacity:.82;line-height:1.8}
+@media(max-width:640px){.lp-anywhere{padding:32px 20px;border-radius:18px;margin-top:48px}.lp-anywhere-head h2{font-size:22px}}
 .lp-tiers{max-width:1120px;margin:0 auto;padding:70px 24px 10px}
 .lp-tier-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px;margin-top:34px}
 .lp-tier{position:relative;background:#fff;border:1px solid #e8eefb;border-radius:20px;padding:26px 24px;display:flex;flex-direction:column;transition:.2s}
@@ -1712,7 +1751,18 @@ const App = {
         <p style="font-size:10.5px;opacity:.75">بواسطة مدار</p>
       </div>
       <div class="nav-section">
-        ${(()=>{const u=Auth.user;const unreadMsg=u?DB.unreadInternalCount(u.id,u.role,Auth.branchId()):0;return visibleGroups.map(g=>{const head=g.label?`<div class="nav-label">${g.label}</div>`:'';const items=g.items.map(l=>{const isMsg=l.v==='messages';const dot=isMsg&&unreadMsg>0?`<span class="nav-msg-dot" title="${unreadMsg} رسالة غير مقروءة"></span>`:'';return `<div class="nav-item ${App.view===l.v?'active':''}" data-v="${l.v}" style="position:relative" onclick="App.go('${l.v}');closeSidebar()">${l.icon} ${l.label}${dot}</div>`;}).join('');return `<div class="nav-group">${head}${items}</div>`;}).join('')})()}
+        ${(()=>{const u=Auth.user;const unreadMsg=u?DB.unreadInternalCount(u.id,u.role,Auth.branchId()):0;
+          return visibleGroups.map((g,gi)=>{
+            const gid=g.label?('g'+gi+'-'+g.label.replace(/\s/g,'')):'';
+            const hasActive=g.items.some(it=>it.v===App.view);
+            // المجموعة تُفتح إذا كانت تحوي الشاشة الحالية، وإلا حسب اختيار المستخدم المحفوظ
+            const collapsed=g.label&&!hasActive&&navGroupCollapsed(gid);
+            const unread=g.items.some(it=>it.v==='messages')&&unreadMsg>0;
+            const head=g.label?`<div class="nav-label" onclick="toggleNavGroup('${gid}',this)">${g.label}${(collapsed&&unread)?'<span class="nav-dot"></span>':''}<span class="nav-caret"></span></div>`:'';
+            const items=g.items.map(l=>{const isMsg=l.v==='messages';const dot=isMsg&&unreadMsg>0?`<span class="nav-msg-dot" title="${unreadMsg} رسالة غير مقروءة"></span>`:'';
+              return `<div class="nav-item ${App.view===l.v?'active':''}" data-v="${l.v}" style="position:relative" onclick="App.go('${l.v}');closeSidebar()">${l.icon} ${l.label}${dot}</div>`;}).join('');
+            return `<div class="nav-group ${collapsed?'collapsed':''}" data-gid="${gid}">${head}<div class="nav-items">${items}</div></div>`;
+          }).join('')})()}
         ${(Auth.isSuperAdmin()&&packageFeatures().size<ALL_FEATURES.length)?`<div class="nav-group"><div class="nav-label">ترقية الباقة</div><div class="nav-item" onclick="App.go('upgradeInfo')" style="color:#fde68a"><i class="ic ic-star"></i> خدمات إضافية متاحة</div></div>`:''}
       </div>
       <div style="flex-shrink:0;padding:6px 6px;border-top:1px solid rgba(255,255,255,.15)">
@@ -1927,6 +1977,8 @@ platformGate(){
     ${Views._lpHero()}
     ${Views._lpStats()}
     ${Views._lpFeatures()}
+    ${Views._lpAllFeatures()}
+    ${Views._lpAnywhere()}
     ${Views._lpTiers()}
     ${Views._lpCtaBand()}
     <div class="lp-footer">© ${new Date().getFullYear()} مدار — منصة إدارة المدارس ورياض الأطفال ودور الحضانة · فوترة إلكترونية متوافقة مع هيئة الزكاة والضريبة والدخل</div>
@@ -1940,6 +1992,7 @@ _lpHeader(){
       <nav class="lp-nav">
         <a href="#top" onclick="lpScroll('top');return false;">الرئيسية</a>
         <a href="#features" onclick="lpScroll('features');return false;">المزايا</a>
+        <a href="#features-all" onclick="lpScroll('features-all');return false;">كل الخدمات</a>
         <a href="#tiers" onclick="lpScroll('tiers');return false;">الباقات</a>
       </nav>
       <div class="lp-header-actions">
@@ -2041,6 +2094,92 @@ _lpVisual(kind){
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       <span class="badge badge-blue">الفرع الرئيسي — 68 طفل</span> <span class="badge badge-green">الفرع الثاني — 47 طفل</span> <span class="badge badge-orange">فرع حي الياسمين — 27 طفل</span> </div>`);
   return '';
+},
+_lpAllFeatures(){
+  const groups=[
+    {g:'الطلاب والاشتراكات',ic:'child',items:[
+      ['ملف الطالب الكامل','بياناته ووليّ أمره وملاحظاته الصحية والسلوكية ومرحلته'],
+      ['الاشتراكات والرسوم','باقات تصمّمينها بنفسك: بالأشهر أو الأيام أو تاريخ محدّد'],
+      ['التجديد والمتابعة','تنبيه قبل الانتهاء، وتجديد يكمل من آخر يوم تلقائياً'],
+      ['المراحل والتصنيف','حضانة، تمهيدي، KG1... أو أي تسمية تستخدمينها'],
+    ]},
+    {g:'الحضور والانصراف',ic:'check',items:[
+      ['تحضير الطلاب اليومي','بالفترة والفصل، وكشوف جاهزة للطباعة'],
+      ['بطاقة خروج بباركود','تمنع تسليم الطالب لغير وليّ أمره'],
+      ['حضور الموظفات','من الجوّال بالموقع الجغرافي أو رمز سرّي'],
+      ['التأخير والغياب','محتسَب تلقائياً في مسيّر الرواتب'],
+    ]},
+    {g:'المالية والفوترة',ic:'receipt',items:[
+      ['فاتورة ضريبية نظامية','برمز QR وفق اشتراطات هيئة الزكاة والضريبة والدخل'],
+      ['إشعارات دائنة','مستند نظامي عند الاسترجاع أو الإلغاء'],
+      ['المبيعات والمصروفات','كل حركة مالية بتصنيفها وطريقة دفعها'],
+      ['تقفيل الصندوق والإقفال الشهري','أرقامك مقفلة ومحفوظة شهراً بشهر'],
+      ['متابعة التحصيل','من عليه متبقٍّ ومتى، دون مكالمات محرجة'],
+    ]},
+    {g:'الموارد البشرية',ic:'users',items:[
+      ['ملف الموظفة','العقد والوثائق وتواريخ انتهائها'],
+      ['الإجازات','رصيد تراكمي وفق نظام العمل السعودي، بقبول ورفض'],
+      ['الرواتب ونهاية الخدمة','مسيّر شهري ومكافأة محسوبة تلقائياً'],
+      ['الوثائق الحكومية','تنبيه قبل انتهاء السجل والرخص والإقامات'],
+    ]},
+    {g:'الأنشطة والتواصل',ic:'target',items:[
+      ['مكتبة الأنشطة','أنشطة جاهزة للمعلّمات مع صور وملفات'],
+      ['رسائل واتساب تلقائية','تذكير تجديد وتأكيد حضور بقوالبك أنتِ'],
+      ['الرسائل الداخلية','بين الإدارة والفروع والمعلّمات'],
+      ['ملاحظات الطلاب','سلوكية وتربوية يطّلع عليها الإرشاد الطلابي'],
+    ]},
+    {g:'الإدارة والتقارير',ic:'chart',items:[
+      ['فروع متعددة','لكل فرع فتراته وأسعاره وموظفاته'],
+      ['تقرير مقارنة الفروع','أيّ فرع ينمو وأيّها يحتاج قراراً'],
+      ['حسابات الموظفين بصلاحيات','إرشاد، نشاط، محاسب، محصّلة رسوم، موارد بشرية'],
+      ['سجلّ النشاط','من فعل ماذا ومتى — بلا استثناء'],
+    ]},
+  ];
+  return `
+  <section class="lp-all" id="features-all">
+    <div class="lp-section-head">
+      <h2>كل ما تديرينه في مدار</h2>
+      <p>منصة واحدة تغطّي يوم مدرستك من أوله لآخره — وباقتك تحدّد أيّ هذه الخدمات تُفتح لك</p>
+    </div>
+    <div class="lp-all-grid">
+      ${groups.map(g=>`
+      <div class="lp-all-card">
+        <div class="lp-all-head"><span class="lp-all-ic"><i class="ic ic-${g.ic}"></i></span><h3>${g.g}</h3></div>
+        <ul>${g.items.map(([t,d])=>`<li><b>${t}</b><span>${d}</span></li>`).join('')}</ul>
+      </div>`).join('')}
+    </div>
+    <div class="lp-pkg-note">
+      <i class="ic ic-bulb"></i>
+      <div>
+        <b>الباقة هي التي تحدّد ما يُفتح لك.</b>
+        دار ضيافة تحتاج متابعة أطفال واشتراكات وفواتير فقط؟ باقة تكفيها.
+        روضة تريد مكتبة أنشطة وملاحظات تربوية؟ باقة أوسع.
+        مدرسة تريد موارد بشرية ونظام محاسبة وفروعاً متعددة؟ الباقة الكاملة.
+        <a href="#tiers" onclick="lpScroll('tiers');return false;">قارني بين الباقات</a>
+      </div>
+    </div>
+  </section>`;
+},
+_lpAnywhere(){
+  const items=[
+    {ic:'mobile',t:'من أي جهاز',d:'جوّال، تابلت، أو حاسب — نفس النظام بلا تطبيق تحمّلينه'},
+    {ic:'globe',t:'من أي مكان',d:'من المدرسة أو البيت أو أثناء السفر — بياناتك معك'},
+    {ic:'clock',t:'على مدار الساعة',d:'مفتوح ٢٤ ساعة، والمعلّمة تسجّل حضورها فجراً وأنتِ نائمة'},
+    {ic:'refresh',t:'محدّث في نفس اللحظة',d:'ما يُسجَّل في الفرع يظهر عندك فوراً بلا تحديث يدوي'},
+  ];
+  return `
+  <section class="lp-anywhere">
+    <div class="lp-anywhere-head">
+      <h2>مدرستك مُدارة على مدار الساعة، من أي مكان</h2>
+      <p>لأن الإدارة لا تنتظر أن تكوني خلف مكتبك</p>
+    </div>
+    <div class="lp-anywhere-grid">
+      ${items.map(x=>`<div class="lp-any-card">
+        <span class="lp-any-ic"><i class="ic ic-${x.ic}"></i></span>
+        <b>${x.t}</b><span>${x.d}</span>
+      </div>`).join('')}
+    </div>
+  </section>`;
 },
 _lpStats(){
   const items=[
@@ -11473,6 +11612,19 @@ function toggleSidebar(){
   if(!sb) return;
   sb.classList.toggle('open');
   if(ov) ov.classList.toggle('open');
+}
+// ===== طيّ مجموعات القائمة الجانبية =====
+const NAV_COLLAPSE_KEY='madar_nav_collapsed';
+function _navCollapsedSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem(NAV_COLLAPSE_KEY))||[]); }catch(e){ return new Set(); }
+}
+function navGroupCollapsed(gid){ return gid?_navCollapsedSet().has(gid):false; }
+function toggleNavGroup(gid,el){
+  const grp=el.closest('.nav-group'); if(!grp) return;
+  const now=grp.classList.toggle('collapsed');
+  const set=_navCollapsedSet();
+  if(now) set.add(gid); else set.delete(gid);
+  try{ localStorage.setItem(NAV_COLLAPSE_KEY,JSON.stringify([...set])); }catch(e){}
 }
 function closeSidebar(){
   const sb=document.querySelector('.sidebar');
