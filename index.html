@@ -10,7 +10,7 @@
 <!-- BUILD: 2026-08-23-v97 -->
 <script>
 (function(){
-  var BUILD='v99-20260824-1';
+  var BUILD='v100-20260824-2';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -706,6 +706,26 @@ let _fbStatus='connecting'; // 'connecting' | 'ok' | 'error'
 const _mem={};
 const _pendingEcho={}; // key→snapshot لقيمة كتبناها مؤخراً (لتجاهل صدى ذاتي فقط، لا تأخير لتحديثات الأجهزة الأخرى)
 const _writeFails={}; // key→count محاولات فشلت
+// آخر نسخة مؤكّدة على السيرفر لكل مفتاح (نصّاً). تُستخدم للتراجع عند فشل الحفظ.
+// نحفظ النص لا المرجع، لأن دوال الإضافة تعدّل المصفوفة نفسها في مكانها،
+// فالاحتفاظ بالمرجع كان يعيدنا إلى النسخة المعدَّلة ذاتها ويترك صفاً وهمياً.
+const _lastGood={};
+function _markGood(k,serialized){ _lastGood[k]=serialized; }
+// عدّاد الكتابات المعلّقة — يمنع إغلاق الصفحة أثناء حفظ لم يصل السيرفر بعد
+let _pendingWrites=0;
+function _trackWrite(p){
+  _pendingWrites++;
+  const done=()=>{_pendingWrites=Math.max(0,_pendingWrites-1);};
+  // تعليق معالج يمنع unhandledrejection للنداءات التي لا تنتظر النتيجة،
+  // ويظل بإمكان المنتظِر التقاط الخطأ عبر await/catch على نفس الوعد.
+  p.then(done,done);
+  return p;
+}
+if(typeof window!=='undefined'){
+  window.addEventListener('beforeunload',(e)=>{
+    if(_pendingWrites>0){e.preventDefault();e.returnValue='';return '';}
+  });
+}
 const _keyListeners=new Set(); // المفاتيح التي رُبط لها مستمع منفصل
 let _renderScheduled=false;
 
@@ -719,6 +739,7 @@ function _ensureKeyListener(k){
 function _onKeyValue(k,val){
   if(val===null||val===undefined) return;
   let incoming; try{incoming=JSON.stringify(val);}catch{return;}
+  _markGood(k,incoming); // وصلَنا من السيرفر ⇒ هذه هي النسخة المؤكّدة
   // صدى ذاتي لقيمة كتبناها نحن — تجاهله
   if(_pendingEcho[k]===incoming){delete _pendingEcho[k];return;}
   let current; try{current=JSON.stringify(_mem[k]);}catch{current=undefined;}
@@ -948,30 +969,61 @@ const DB = {
     if(_mem.hasOwnProperty(k)) return _mem[k];
     try{return JSON.parse(localStorage.getItem('ccs_'+k))}catch{return null}
   },
-  set(k,v){
+  // يعيد وعداً (Promise) يتحقّق فقط بعد تأكيد الخادم للحفظ — لا نُخبر المستخدمة
+  // بأن البيانات حُفظت قبل أن تصل فعلاً إلى السيرفر.
+  set(k,v,opts){
+    opts=opts||{};
+    const hadGood=Object.prototype.hasOwnProperty.call(_lastGood,k);
+    const prevSerialized=hadGood?_lastGood[k]:undefined;
     _mem[k]=v;
     // تحويل النص مرة واحدة فقط — يُستخدم للتخزين المحلي ولكشف الصدى الذاتي
     let serialized=null;
     try{serialized=JSON.stringify(v);}catch{}
-    try{if(serialized!==null)localStorage.setItem('ccs_'+k,serialized)}catch{}
+    // المرآة المحلية مجرد ذاكرة مؤقتة؛ إن امتلأت مساحة المتصفح نحذف المفتاح
+    // بدل ترك نسخة قديمة تُقرأ لاحقاً وكأنها الأحدث.
+    try{
+      if(serialized!==null) localStorage.setItem('ccs_'+k,serialized);
+    }catch(e){
+      try{localStorage.removeItem('ccs_'+k);}catch{}
+      console.warn('[DB] مساحة المتصفح ممتلئة — الاعتماد على السيرفر للمفتاح '+k);
+    }
     _backupData(k,v); // نسخ احتياطي دوري للحضور (حماية من الفقدان)
+    // يعيد الذاكرة والمرآة المحلية لآخر حالة محفوظة فعلاً على السيرفر
+    const rollback=()=>{
+      try{
+        if(hadGood){ _mem[k]=JSON.parse(prevSerialized); }
+        else { delete _mem[k]; }
+      }catch{ delete _mem[k]; }
+      try{
+        if(hadGood) localStorage.setItem('ccs_'+k,prevSerialized);
+        else localStorage.removeItem('ccs_'+k);
+      }catch{}
+    };
     // وضع التخزين على الخادم (الأساسي)
     if(_storageMode==='backend'){
-      if(serialized===null) return;
-      const attempt=(n)=>{
-        _backendPut(k,serialized)
-          .then(r=>{if(!r.ok)throw new Error('http '+r.status);_writeFails[k]=0;})
-          .catch(err=>{
-            if(n<4){setTimeout(()=>attempt(n+1),1000*n);}
-            else{
+      if(serialized===null){rollback();return Promise.reject(new Error('قيمة غير قابلة للحفظ'));}
+      return _trackWrite(new Promise((resolve,reject)=>{
+        const attempt=(n)=>{
+          _backendPut(k,serialized)
+            .then(r=>{
+              if(r.status===413){const e=new Error('too_large');e.code='too_large';throw e;}
+              if(r.status===401||r.status===403){const e=new Error('auth');e.code='auth';throw e;}
+              if(!r.ok) throw new Error('http '+r.status);
+              _writeFails[k]=0; _markGood(k,serialized); resolve(true);
+            })
+            .catch(err=>{
+              // خطأ حجم أو صلاحية لن يُصلحه التكرار — لا فائدة من إعادة المحاولة
+              if(!err.code&&n<4){setTimeout(()=>attempt(n+1),1000*n);return;}
               _writeFails[k]=(_writeFails[k]||0)+1;
+              rollback();
               console.error('[DB] فشل حفظ '+k+':',err?.message||err);
-              if(typeof toast==='function') toast('تعذّر حفظ "'+k+'" — تحقق من الاتصال','error');
-            }
-          });
-      };
-      attempt(1);
-      return;
+              err.dbKey=k;
+              if(!opts.quiet&&typeof toast==='function') toast(_saveErrMsg(err),'error');
+              reject(err);
+            });
+        };
+        attempt(1);
+      }));
     }
     // وضع Firebase (احتياطي)
     if(_fdb&&_fbStatus==='ok'){
@@ -981,28 +1033,35 @@ const DB = {
       _ensureKeyListener(k); // ربط مستمع لو كان مفتاحاً جديداً
       // نظّف بعد 60 ثانية لتجنب نمو الذاكرة
       setTimeout(()=>{delete _pendingEcho[k];},60000);
-      const attempt=(n)=>{
-        _fdb.ref('ccs/'+k).set(_mem[k])
-          .then(()=>{_writeFails[k]=0;})
-          .catch(err=>{
-            if(n<4){
-              setTimeout(()=>attempt(n+1),1000*n);
-            } else {
+      return _trackWrite(new Promise((resolve,reject)=>{
+        const attempt=(n)=>{
+          _fdb.ref('ccs/'+k).set(_mem[k])
+            .then(()=>{_writeFails[k]=0;_markGood(k,serialized);resolve(true);})
+            .catch(err=>{
+              if(n<4){setTimeout(()=>attempt(n+1),1000*n);return;}
               _writeFails[k]=(_writeFails[k]||0)+1;
+              rollback();
               console.error('[DB] فشل حفظ '+k+':',err?.message||err);
-              if(typeof toast==='function') toast('تعذّر مزامنة "'+k+'" — احفظ مرة أخرى','error');
-            }
-          });
-      };
-      attempt(1);
+              err.dbKey=k;
+              if(!opts.quiet&&typeof toast==='function') toast(_saveErrMsg(err),'error');
+              reject(err);
+            });
+        };
+        attempt(1);
+      }));
     }
+    return Promise.resolve(true);
   },
   // التهيئة: تحميل بيانات المدرسة الحالية (Tenant) من الخادم فقط.
   // قد ترمي خطأ برمز 'subscription_inactive' أو 'unauthorized' — يتولّى المستدعي (startAppForTenant) عرض الشاشة المناسبة.
   async initStorage(){
     const backendData=await _backendGetAll();
     _storageMode='backend';
-    if(backendData) Object.assign(_mem,backendData);
+    if(backendData){
+      Object.assign(_mem,backendData);
+      // خط الأساس للتراجع: ما هو موجود فعلاً على السيرفر الآن
+      Object.entries(backendData).forEach(([k,v])=>{try{_markGood(k,JSON.stringify(v));}catch{}});
+    }
     _openSSE();
     _startSyncWatchdog();
     _fbStatus='ok';
@@ -1087,17 +1146,17 @@ const DB = {
   children(){return this.get('children')||[]},
   subscriptions(){return this.get('subscriptions')||[]},
   attendance(){return this.get('attendance')||[]},
-  save(k,arr){this.set(k,arr)},
+  save(k,arr,opts){return this.set(k,arr,opts)},
   addUser(u){const a=this.users();a.push(u);this.save('users',a)},
   updateUser(u){const a=this.users();const i=a.findIndex(x=>x.id===u.id);if(i>=0)a[i]=u;else a.push(u);this.save('users',a)},
   deleteUser(id){this.save('users',this.users().filter(x=>x.id!==id))},
   addSchool(s){const a=this.schools();a.push(s);this.save('schools',a)},
   updateSchool(s){const a=this.schools();const i=a.findIndex(x=>x.id===s.id);if(i>=0)a[i]=s;else a.push(s);this.save('schools',a)},
-  addChild(c){const a=this.children();a.push(c);this.save('children',a)},
-  updateChild(c){const a=this.children();const i=a.findIndex(x=>x.id===c.id);if(i>=0)a[i]=c;else a.push(c);this.save('children',a)},
-  deleteChild(id){this.save('children',this.children().filter(x=>x.id!==id))},
-  addSub(s){const a=this.subscriptions();a.push(s);this.save('subscriptions',a)},
-  updateSub(s){const a=this.subscriptions();const i=a.findIndex(x=>x.id===s.id);if(i>=0)a[i]=s;else a.push(s);this.save('subscriptions',a)},
+  addChild(c,opts){const a=this.children();a.push(c);return this.save('children',a,opts)},
+  updateChild(c,opts){const a=this.children();const i=a.findIndex(x=>x.id===c.id);if(i>=0)a[i]=c;else a.push(c);return this.save('children',a,opts)},
+  deleteChild(id){return this.save('children',this.children().filter(x=>x.id!==id))},
+  addSub(s,opts){const a=this.subscriptions();a.push(s);return this.save('subscriptions',a,opts)},
+  updateSub(s,opts){const a=this.subscriptions();const i=a.findIndex(x=>x.id===s.id);if(i>=0)a[i]=s;else a.push(s);return this.save('subscriptions',a,opts)},
   deleteSub(id){this.save('subscriptions',this.subscriptions().filter(x=>x.id!==id))},
   // المصروفات
   expenses(){return this.get('expenses')||[]},
@@ -7336,7 +7395,7 @@ const Modals = {
 
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="saveChild()"><i class="ic ic-check"></i> حفظ وتسجيل الاشتراك</button>
+        <button class="btn btn-primary" id="c-save-btn" onclick="saveChild()"><i class="ic ic-check"></i> حفظ وتسجيل الاشتراك</button>
         <button class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
       </div>
     </div></div>`);
@@ -7395,7 +7454,7 @@ const Modals = {
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="saveChild(true)">حفظ التعديلات</button>
+        <button class="btn btn-primary" id="c-save-btn" onclick="saveChild(true)">حفظ التعديلات</button>
         <button class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
       </div>
     </div></div>`);
@@ -7531,7 +7590,7 @@ const Modals = {
         <img src="__none__" style="display:none" onerror="setTimeout(()=>calcEndDate(),0)">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" onclick="saveSub()">حفظ الاشتراك</button>
+        <button class="btn btn-primary" id="sub-save-btn" onclick="saveSub()">حفظ الاشتراك</button>
         <button class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
       </div>
     </div></div>`);
@@ -9251,22 +9310,48 @@ function setPM(btn,hiddenId){
   if(h) h.value=btn.dataset.v;
 }
 
-function handleReceiptImg(input,hiddenId,previewId){
+async function handleReceiptImg(input,hiddenId,previewId){
   const file=input.files[0];
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const h=document.getElementById(hiddenId);
-    if(h) h.value=e.target.result;
-    const p=document.getElementById(previewId);
-    if(p){p.style.display='block';p.innerHTML=`<img src="${e.target.result}"><div style="font-size:11px;color:#10b981;margin-top:4px"><i class="ic ic-check"></i> تم رفع الإيصال</div>`;}
-  };
-  reader.readAsDataURL(file);
+  const h=document.getElementById(hiddenId);
+  const p=document.getElementById(previewId);
+  if(p){p.style.display='block';p.innerHTML='<div style="font-size:12px;color:#64748b">جارِ تجهيز الإيصال…</div>';}
+  let data;
+  try{
+    // صورة الإيصال تبقى مقروءة عند ٩٠٠ بكسل، وتُحفظ بحجم لا يُفشل الاشتراك
+    data=await shrinkImage(file,900,140*1024);
+  }catch(e){
+    if(h) h.value=''; if(p){p.style.display='none';p.innerHTML='';} input.value='';
+    toast(_uploadErrMsg?_uploadErrMsg(e):(e&&e.message)||'تعذّرت معالجة الإيصال','error');
+    return;
+  }
+  if(h) h.value=data;
+  if(p)p.innerHTML=`<img src="${data}"><div style="font-size:11px;color:#10b981;margin-top:4px"><i class="ic ic-check"></i> تم رفع الإيصال</div>`;
 }
 
-function handleGovDocFile(input,hiddenId,previewId){
+async function handleGovDocFile(input,hiddenId,previewId){
   const file=input.files[0];
   if(!file) return;
+  // الصور تُصغَّر؛ الملفات الأخرى (PDF) تُقبل بحدّ واضح بدل أن يفشل الحفظ لاحقاً بصمت
+  if(/^image\//.test(file.type)){
+    try{
+      const data=await shrinkImage(file,1200,220*1024);
+      const h=document.getElementById(hiddenId); if(h) h.value=data;
+      const nameH=document.getElementById(hiddenId+'-name'); if(nameH) nameH.value=file.name;
+      const typeH=document.getElementById(hiddenId+'-type'); if(typeH) typeH.value=file.type;
+      const p=document.getElementById(previewId);
+      if(p){p.style.display='block';p.innerHTML=`<img src="${data}"><div style="font-size:11px;color:#10b981;margin-top:4px"><i class="ic ic-check"></i> ${esc(file.name)}</div>`;}
+    }catch(e){
+      input.value='';
+      toast(_uploadErrMsg?_uploadErrMsg(e):(e&&e.message)||'تعذّرت معالجة الملف','error');
+    }
+    return;
+  }
+  if(file.size>4*1024*1024){
+    input.value='';
+    toast('الملف كبير ('+Math.round(file.size/1024/1024)+' ميجابايت) — الحدّ ٤ ميجابايت. اضغطي الملف أو ارفعي صورة بدلاً منه','error');
+    return;
+  }
   const reader=new FileReader();
   reader.onload=e=>{
     const h=document.getElementById(hiddenId);
@@ -9299,7 +9384,7 @@ function pmButtons(hiddenId,selected){
 function receiptField(fileId,hiddenId,previewId){
   return `<div class="input-group" style="margin-top:10px">
     <label style="font-size:13px;font-weight:600;color:#374151"><i class="ic ic-paperclip"></i> إيصال الدفع <span style="font-weight:400;color:#94a3b8">(اختياري)</span></label>
-    <input type="file" accept="image/*" class="input" style="padding:6px;font-size:13px" onchange="handleReceiptImg(this,'${hiddenId}','${previewId}')">
+    <input type="file" id="${fileId}" accept="image/*" class="input" style="padding:6px;font-size:13px" onchange="handleReceiptImg(this,'${hiddenId}','${previewId}')">
     <input type="hidden" id="${hiddenId}" value="">
     <div class="receipt-preview" id="${previewId}"></div>
   </div>`;
@@ -9393,6 +9478,13 @@ function toggleSchool(id){
   App.refresh();
 }
 
+// رسالة مفهومة عند فشل الحفظ على السيرفر، مع سبب واضح وخطوة تالية
+function _saveErrMsg(e){
+  const c=e&&e.code;
+  if(c==='too_large') return 'الحفظ فشل: حجم البيانات كبير على السيرفر — غالباً بسبب صورة مرفقة. احذفي الصورة وأعيدي المحاولة، أو ارفعي حدّ الرفع على الخادم.';
+  if(c==='auth')      return 'الحفظ فشل: انتهت صلاحية جلستك — سجّلي الدخول من جديد ثم أعيدي الحفظ.';
+  return 'الحفظ فشل: لم تصل البيانات إلى السيرفر — تحقّقي من الاتصال ثم أعيدي المحاولة. (لم يُحفظ شيء ناقص)';
+}
 let _savingChild=false;
 // ===== دوال الموارد البشرية =====
 function hrCalcTotal(){
@@ -10053,12 +10145,20 @@ function markHrPaid(payId){
 }
 
 let _childPhoto=null;
-function _childPickPhoto(input){
+async function _childPickPhoto(input){
   const f=input.files[0];if(!f)return;
-  if(f.size>2*1024*1024){toast('الصورة يجب ألا تتجاوز 2 ميجابايت','error');input.value='';return;}
-  const r=new FileReader();
-  r.onload=ev=>{_childPhoto=ev.target.result;const p=document.getElementById('c-photo-preview');if(p)p.innerHTML=`<div style="position:relative;display:inline-block"><img src="${_childPhoto}" style="max-height:100px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover"><button type="button" onclick="_childClearPhoto()" style="position:absolute;top:2px;left:2px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer">✕</button></div>`;};
-  r.readAsDataURL(f);
+  const p=document.getElementById('c-photo-preview');
+  if(p)p.innerHTML='<span style="font-size:12px;color:#64748b">جارِ تجهيز الصورة…</span>';
+  try{
+    // تُصغَّر الصورة قبل الحفظ — الصور الأصلية من الجوال تتجاوز ٢ ميجابايت
+    // وتجعل حفظ سجل الأطفال كاملاً يفشل على السيرفر.
+    _childPhoto=await shrinkImage(f,480,90*1024);
+  }catch(e){
+    _childPhoto=null; if(p)p.innerHTML=''; input.value='';
+    toast(_uploadErrMsg?_uploadErrMsg(e):(e&&e.message)||'تعذّرت معالجة الصورة','error');
+    return;
+  }
+  if(p)p.innerHTML=`<div style="position:relative;display:inline-block"><img src="${_childPhoto}" style="max-height:100px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover"><button type="button" onclick="_childClearPhoto()" style="position:absolute;top:2px;left:2px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer">✕</button></div>`;
 }
 function _childClearPhoto(){_childPhoto=null;const p=document.getElementById('c-photo-preview');if(p)p.innerHTML='';const i=document.getElementById('c-photo');if(i)i.value='';}
 function _childPhotoField(c){
@@ -10067,14 +10167,13 @@ function _childPhotoField(c){
     <div id="c-photo-preview" style="margin-top:6px">${c&&c.photo?`<div style="position:relative;display:inline-block"><img src="${c.photo}" style="max-height:100px;border-radius:8px;border:1px solid #e2e8f0;object-fit:cover"><button type="button" onclick="_childClearPhoto()" style="position:absolute;top:2px;left:2px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer">✕</button></div>`:''}</div>
   </div>`;
 }
-function saveChild(edit=false){
+async function saveChild(edit=false){
   if(_savingChild) return; // يمنع تسجيل الطفل/الاشتراك مرتين عند الضغط على الحفظ بسرعة
   if(!edit&&pkgLimitReached('maxChildren',DB.children().length)){
     toast(`باقتك الحالية تسمح بـ ${pkgLimit('maxChildren')} طالب — رقّي الباقة لإضافة المزيد`,'error');
     return;
   }
   _savingChild=true;
-  setTimeout(()=>{_savingChild=false;},1500);
   const name=document.getElementById('c-name')?.value?.trim();
   const parent=document.getElementById('c-parent')?.value?.trim();
   const phone=document.getElementById('c-phone')?.value?.trim();
@@ -10120,10 +10219,19 @@ function saveChild(edit=false){
     discountPct:parseFloat(document.getElementById('c-disc')?.value||0),
     photo:_childPhoto||'',
   };
-  if(edit) DB.updateChild(c); else {
-    DB.addChild(c);
-    if(Auth.user) DB.addNotification({type:'new_child',title:'<i class="ic ic-child"></i> طفل جديد',body:`تم تسجيل ${name}`,branchId:c.branchId,period:c.period,addedBy:Auth.user.name,addedById:Auth.user.id});
+  // ننتظر تأكيد السيرفر قبل إغلاق النافذة — لا نقول "تم الحفظ" قبل وصول البيانات
+  const btn=document.getElementById('c-save-btn');
+  const btnHTML=btn?btn.innerHTML:'';
+  if(btn){btn.disabled=true;btn.innerHTML='جارِ الحفظ…';}
+  const restore=()=>{_savingChild=false;if(btn){btn.disabled=false;btn.innerHTML=btnHTML;}};
+  try{
+    if(edit) await DB.updateChild(c,{quiet:true}); else await DB.addChild(c,{quiet:true});
+  }catch(err){
+    restore();
+    alert(_saveErrMsg(err));
+    return;
   }
+  if(!edit&&Auth.user) DB.addNotification({type:'new_child',title:'<i class="ic ic-child"></i> طفل جديد',body:`تم تسجيل ${name}`,branchId:c.branchId,period:c.period,addedBy:Auth.user.name,addedById:Auth.user.id});
 
   // حفظ الاشتراك مع الطفل (للتسجيل الجديد فقط)
   if(!edit){
@@ -10143,20 +10251,28 @@ function saveChild(edit=false){
       const basePrice=planBasePrice(cPrices,(_cd.mode==='plan'?subType:'custom'),subCustomDays||15)||subPrice;
       const subPM=document.getElementById('c-sub-pm')?.value||defaultPayKey();
       const subReceipt=document.getElementById('c-receipt-data')?.value||'';
-      DB.addSub({id:uid(),childId,schoolId,branchId:c.branchId,period,type:(_cd.mode==='plan'?subType:'custom'),customDays:subCustomDays,startDate:subStart,endDate:subEnd,basePrice,discountPct:parseFloat(document.getElementById('c-disc')?.value||0),price:subPrice,paidAmount:subPaid,paymentStatus:subPay,paymentMethod:subPM,receiptImage:subReceipt,isActive:true,createdAt:T0,invoiceNo});
+      try{
+        await DB.addSub({id:uid(),childId,schoolId,branchId:c.branchId,period,type:(_cd.mode==='plan'?subType:'custom'),customDays:subCustomDays,startDate:subStart,endDate:subEnd,basePrice,discountPct:parseFloat(document.getElementById('c-disc')?.value||0),price:subPrice,paidAmount:subPaid,paymentStatus:subPay,paymentMethod:subPM,receiptImage:subReceipt,isActive:true,createdAt:T0,invoiceNo},{quiet:true});
+      }catch(err){
+        restore();
+        alert('حُفظ الطفل، لكن الاشتراك لم يُحفظ.\n\n'+_saveErrMsg(err)+'\n\nافتحي ملف الطفل وسجّلي له الاشتراك مرة أخرى.');
+        App.closeModal();
+        if(App.view==='children') App.refresh(); else App.go('children');
+        return;
+      }
       if(Auth.user) DB.addNotification({type:'new_sub',title:'<i class="ic ic-clipboard"></i> اشتراك جديد',body:`اشتراك ${planName(subType)} لـ ${name} — ${subPrice} ر.س | الدفع: ${payTag(subPM)} | ${subPay==='paid'?'مدفوع بالكامل':subPay==='partial'?'مدفوع جزئياً':'مؤجل'}`,branchId:c.branchId,period:period,addedBy:Auth.user.name,addedById:Auth.user.id});
     }
   }
+  restore();
   toast(edit?'<i class="ic ic-check"></i> تم حفظ التعديلات':'<i class="ic ic-check"></i> تم تسجيل الطفل');
   App.closeModal();
   if(App.view==='children') App.refresh(); else App.go('children');
 }
 
 let _savingSub=false;
-function saveSub(){
+async function saveSub(){
   if(_savingSub) return; // يمنع إنشاء اشتراكين عند الضغط على الحفظ مرتين بسرعة
   _savingSub=true;
-  setTimeout(()=>{_savingSub=false;},1500);
   const childId=document.getElementById('sub-child')?.value;
   const schoolId=document.getElementById('sub-school')?.value;
   const period=document.getElementById('sub-period')?.value||defaultPeriodKey();
@@ -10180,8 +10296,12 @@ function saveSub(){
   const paymentMethod=document.getElementById('sub-pm')?.value||defaultPayKey();
   const receiptImage=document.getElementById('sub-receipt-data')?.value||'';
   const s={id:uid(),childId,schoolId,branchId:child?.branchId||'',period,type,customDays,startDate,endDate,basePrice,discountPct:discPct,price,paidAmount,paymentStatus,paymentMethod,receiptImage,isActive:true,createdAt:T0,invoiceNo};
-  DB.addSub(s);
+  const _sbtn=document.getElementById("sub-save-btn");const _sh=_sbtn?_sbtn.innerHTML:"";
+  if(_sbtn){_sbtn.disabled=true;_sbtn.innerHTML="جارِ الحفظ…";}
+  try{ await DB.addSub(s,{quiet:true});
+  }catch(err){_savingSub=false;if(_sbtn){_sbtn.disabled=false;_sbtn.innerHTML=_sh;}alert(_saveErrMsg(err));return;}
   if(Auth.user) DB.addNotification({type:'new_sub',title:'<i class="ic ic-clipboard"></i> اشتراك جديد',body:`اشتراك ${planName(type)} لـ ${child?.name||''} — ${price} ر.س | الدفع: ${payTag(paymentMethod)} | ${paymentStatus==='paid'?'مدفوع بالكامل':paymentStatus==='partial'?'مدفوع جزئياً':'مؤجل'}`,branchId:child?.branchId||'',period:period,addedBy:Auth.user.name,addedById:Auth.user.id});
+  _savingSub=false;
   toast('تم حفظ الاشتراك');
   App.closeModal();
   App.refresh();

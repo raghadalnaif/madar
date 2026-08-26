@@ -249,6 +249,18 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: BODY_LIMIT }));
+// جسم أكبر من الحد يصل هنا — نردّ JSON واضحاً بدل صفحة خطأ HTML، ليعرض
+// المتصفح للمستخدمة سبباً مفهوماً (غالباً صورة مرفقة كبيرة) بدل فشل صامت.
+app.use((err, req, res, next) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    console.warn('[madarek-api] طلب أكبر من الحد المسموح (' + BODY_LIMIT + ') على ' + req.method + ' ' + req.originalUrl);
+    return res.status(413).json({ error: 'payload_too_large', limit: BODY_LIMIT });
+  }
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'bad_json' });
+  }
+  return next(err);
+});
 // CORS: التوثيق يعتمد على Bearer token في كل طلب (لا كوكيز)، فالسماح بأصول متعددة هنا آمن.
 app.use((req, res, next) => {
   res.set('Access-Control-Allow-Origin', '*');
