@@ -10,7 +10,7 @@
 <!-- BUILD: 2026-08-23-v97 -->
 <script>
 (function(){
-  var BUILD='v101-20260824-3';
+  var BUILD='v102-20260824-4';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -267,6 +267,8 @@ details[open]>summary span:last-child{transform:rotate(180deg)}
 .progress-bar{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;transition:.3s}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#save-state .ic{width:13px;height:13px;flex:none}
 .hamburger{display:none;background:none;border:none;font-size:24px;cursor:pointer;padding:4px 8px;color:#1d4ed8;line-height:1}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:98}
 .sidebar-overlay.open{display:block}
@@ -319,6 +321,8 @@ details[open]>summary span:last-child{transform:rotate(180deg)}
 @media(max-width:560px){
   /* الشريط العلوي: نُبقي ما يلزم فقط حتى لا تنزلق الصفحة أفقياً */
   .tb-uname,.tb-clock{display:none}
+  #save-state .ss-txt{display:none}
+  #save-state{padding:5px 7px}
   .avatar{width:32px;height:32px;font-size:13px}
   .topbar-title{font-size:14px}
   .stat-card{padding:15px}
@@ -713,12 +717,44 @@ const _lastGood={};
 function _markGood(k,serialized){ _lastGood[k]=serialized; }
 // عدّاد الكتابات المعلّقة — يمنع إغلاق الصفحة أثناء حفظ لم يصل السيرفر بعد
 let _pendingWrites=0;
+// حالة الحفظ المعروضة في الشريط العلوي: محفوظ / جارِ الحفظ / لم يُحفظ
+let _saveState='idle';      // idle | saving | saved | failed
+let _lastSavedAt=0;
+function _setSaveState(st){ _saveState=st; if(st==='saved')_lastSavedAt=Date.now(); _renderSaveState(); }
+function _saveStateView(){
+  if(_saveState==='saving') return {bg:'#fef3c7',fg:'#92400e',bd:'#fde68a',ic:'refresh',txt:'جارِ الحفظ…',spin:true};
+  if(_saveState==='failed') return {bg:'#fee2e2',fg:'#991b1b',bd:'#fecaca',ic:'alert',txt:'لم يُحفظ',spin:false};
+  if(_saveState==='saved'){
+    const m=Math.floor((Date.now()-_lastSavedAt)/60000);
+    return {bg:'#dcfce7',fg:'#166534',bd:'#bbf7d0',ic:'check',
+            txt:m<1?'محفوظ':(m<60?('محفوظ قبل '+m+' د'):'محفوظ'),spin:false};
+  }
+  return null;             // لا شيء يُعرض قبل أول عملية حفظ
+}
+function _renderSaveState(){
+  const el=document.getElementById('save-state'); if(!el) return;
+  const v=_saveStateView();
+  if(!v){el.style.display='none';return;}
+  el.style.display='inline-flex';
+  el.style.background=v.bg; el.style.color=v.fg; el.style.borderColor=v.bd;
+  el.title=_saveState==='failed'
+    ? 'آخر عملية حفظ لم تصل السيرفر — البيانات غير محفوظة'
+    : (_saveState==='saving'?'يجري إرسال البيانات إلى السيرفر':'كل التعديلات محفوظة على السيرفر');
+  el.innerHTML='<i class="ic ic-'+v.ic+'"'+(v.spin?' style="animation:spin 1s linear infinite"':'')+'></i> <span class="ss-txt">'+v.txt+'</span>';
+}
+setInterval(()=>{ if(_saveState==='saved') _renderSaveState(); },60000);
 function _trackWrite(p){
   _pendingWrites++;
-  const done=()=>{_pendingWrites=Math.max(0,_pendingWrites-1);};
+  if(_saveState!=='saving') _setSaveState('saving');
+  const done=(ok)=>{
+    _pendingWrites=Math.max(0,_pendingWrites-1);
+    if(!ok) _setSaveState('failed');
+    else if(_pendingWrites===0&&_saveState!=='failed') _setSaveState('saved');
+    else if(_pendingWrites===0) _renderSaveState();
+  };
   // تعليق معالج يمنع unhandledrejection للنداءات التي لا تنتظر النتيجة،
   // ويظل بإمكان المنتظِر التقاط الخطأ عبر await/catch على نفس الوعد.
-  p.then(done,done);
+  p.then(()=>done(true),()=>done(false));
   return p;
 }
 if(typeof window!=='undefined'){
@@ -822,6 +858,7 @@ function restoreAttBackup(kind){
 }
 // تحديث شارة الجرس ونقطة المزامنة في الشريط العلوي مباشرة عند وصول بيانات جديدة
 function _refreshNotifBadge(){
+  if(typeof _renderSaveState==='function') _renderSaveState();
   const btn=document.getElementById('notif-btn');
   if(btn){const unread=DB.unreadCount();btn.innerHTML='<i class="ic ic-bell"></i>'+(unread>0?`<span class="notif-badge">${unread>9?'9+':unread}</span>`:'');}
   const dot=document.getElementById('sync-dot');
@@ -1875,6 +1912,8 @@ const App = {
     const h=(location.hash||'').replace(/^#/,'');
     if(h.split(/[?\/]/)[0]==='attend'){document.getElementById('app').innerHTML=Views.staffCheckin();return;}
     document.getElementById('app').innerHTML=Auth.user?this.shell():Views.login();
+    // الشريط العلوي يُعاد بناؤه مع كل انتقال — أعِد رسم شارة حالة الحفظ فيه
+    if(typeof _renderSaveState==='function') _renderSaveState();
   },
   shell(){
     return `
@@ -2051,7 +2090,7 @@ _roleMenu(u){
         <button class="btn btn-secondary btn-sm" onclick="openQuickSearch()" title="بحث سريع (Ctrl+K)" style="padding:6px 12px;font-size:13px;color:#64748b"><i class="ic ic-search"></i> <span class="export-label">بحث</span> <kbd class="tb-kbd" style="font-size:10px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:1px 4px;color:#64748b;font-family:monospace">⌃K</kbd></button>
         <button class="btn btn-secondary btn-sm" onclick="App.go(App.view,App.params)" title="تحديث البيانات" style="padding:6px 10px;font-size:16px;line-height:1"><i class="ic ic-refresh"></i></button>
         <button class="btn btn-success btn-sm" onclick="exportAllData()" title="تصدير جميع البيانات Excel" style="padding:6px 12px;font-size:13px"><i class="ic ic-download"></i> <span class="export-label">تصدير</span></button>
-        <span class="tb-clock" style="font-size:11px;color:#94a3b8">${hm}</span> ${(()=>{
+        <span id="save-state" style="display:none;align-items:center;gap:5px;font-size:11.5px;font-weight:700;border:1px solid transparent;border-radius:20px;padding:4px 10px;white-space:nowrap"></span> <span class="tb-clock" style="font-size:11px;color:#94a3b8">${hm}</span> ${(()=>{
           const mode=_storageMode;
           const sseState=_sse?_sse.readyState:-1; // -1=غير مفتوح, 0=يتصل, 1=متصل, 2=مغلق
           const ok=mode==='backend'&&sseState===1;
@@ -7237,6 +7276,11 @@ const Modals = {
     setTimeout(()=>{const el=document.getElementById('br-qr');if(el&&window.QRCode){el.innerHTML='';new QRCode(el,{text:url,width:220,height:220,correctLevel:QRCode.CorrectLevel.M});}else if(el){el.innerHTML='<div style="color:#ef4444;font-size:13px">تعذّر توليد الباركود</div>';}},80);
   },
   addBranch(){
+    // نتحقق من حدّ الباقة قبل فتح النافذة، لا بعد تعبئة النموذج
+    if(pkgLimitReached('maxBranches',DB.branches().length)){
+      alert('باقتك الحالية («'+(tenantPackage()?.name||'بلا باقة')+'») تسمح بـ '+pkgLimit('maxBranches')+' فرع فقط، ولديك '+DB.branches().length+' الآن.\n\nلإضافة فرع جديد رقّي الباقة من «ترقية الباقة».');
+      return;
+    }
     App.showModal(`
     <div class="modal-overlay" onclick="if(event.target===this)App.closeModal()">
     <div class="modal">
@@ -9461,7 +9505,7 @@ async function saveBranch(edit=false){
   try{
     if(edit) await DB.updateBranch(b,{quiet:true}); else await DB.addBranch(b,{quiet:true});
   }catch(err){ alert(_saveErrMsg(err)); return; }
-  toast(edit?'<i class="ic ic-check"></i> تم حفظ الفرع':'<i class="ic ic-check"></i> تم إضافة الفرع');
+  toast(edit?'<i class="ic ic-check"></i> تم حفظ الفرع على السيرفر':'<i class="ic ic-check"></i> تم إضافة الفرع وحفظه على السيرفر');
   App.closeModal();
   if(App.view==='branches') App.refresh(); else App.go('branches');
 }
@@ -9481,7 +9525,7 @@ async function saveSchool(edit=false){
   try{
     if(edit) await DB.updateSchool(s,{quiet:true}); else await DB.addSchool(s,{quiet:true});
   }catch(err){ alert(_saveErrMsg(err)); return; }
-  toast(edit?'<i class="ic ic-check"></i> تم حفظ المدرسة':'<i class="ic ic-check"></i> تم إضافة المدرسة');
+  toast(edit?'<i class="ic ic-check"></i> تم حفظ المدرسة على السيرفر':'<i class="ic ic-check"></i> تم إضافة المدرسة وحفظها على السيرفر');
   App.closeModal();
   if(App.view==='schools') App.refresh(); else App.go('schools');
 }
@@ -10281,7 +10325,7 @@ async function saveChild(edit=false){
     }
   }
   restore();
-  toast(edit?'<i class="ic ic-check"></i> تم حفظ التعديلات':'<i class="ic ic-check"></i> تم تسجيل الطفل');
+  toast(edit?'<i class="ic ic-check"></i> تم حفظ التعديلات على السيرفر':'<i class="ic ic-check"></i> تم تسجيل الطفل وحفظه على السيرفر');
   App.closeModal();
   if(App.view==='children') App.refresh(); else App.go('children');
 }
@@ -10319,7 +10363,7 @@ async function saveSub(){
   }catch(err){_savingSub=false;if(_sbtn){_sbtn.disabled=false;_sbtn.innerHTML=_sh;}alert(_saveErrMsg(err));return;}
   if(Auth.user) DB.addNotification({type:'new_sub',title:'<i class="ic ic-clipboard"></i> اشتراك جديد',body:`اشتراك ${planName(type)} لـ ${child?.name||''} — ${price} ر.س | الدفع: ${payTag(paymentMethod)} | ${paymentStatus==='paid'?'مدفوع بالكامل':paymentStatus==='partial'?'مدفوع جزئياً':'مؤجل'}`,branchId:child?.branchId||'',period:period,addedBy:Auth.user.name,addedById:Auth.user.id});
   _savingSub=false;
-  toast('تم حفظ الاشتراك');
+  toast('<i class="ic ic-check"></i> تم حفظ الاشتراك على السيرفر');
   App.closeModal();
   App.refresh();
 }
@@ -11940,7 +11984,7 @@ async function saveTeacher(edit=false){
     try{ await DB.addUser({id:uid(),name,username,password:pass,role:'teacher',schoolId,branchId,period,phone},{quiet:true}); }
     catch(err){ alert(_saveErrMsg(err)); return; }
   }
-  toast(edit?'<i class="ic ic-check"></i> تم حفظ التعديلات':'<i class="ic ic-check"></i> تم إضافة المعلمة');
+  toast(edit?'<i class="ic ic-check"></i> تم حفظ التعديلات على السيرفر':'<i class="ic ic-check"></i> تم إضافة المعلمة وحفظها على السيرفر');
   App.closeModal();
   if(App.view==='teachers') App.refresh(); else App.go('teachers');
 }
