@@ -10,7 +10,7 @@
 <!-- BUILD: 2026-08-23-v97 -->
 <script>
 (function(){
-  var BUILD='v100-20260824-2';
+  var BUILD='v101-20260824-3';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -1147,11 +1147,11 @@ const DB = {
   subscriptions(){return this.get('subscriptions')||[]},
   attendance(){return this.get('attendance')||[]},
   save(k,arr,opts){return this.set(k,arr,opts)},
-  addUser(u){const a=this.users();a.push(u);this.save('users',a)},
-  updateUser(u){const a=this.users();const i=a.findIndex(x=>x.id===u.id);if(i>=0)a[i]=u;else a.push(u);this.save('users',a)},
-  deleteUser(id){this.save('users',this.users().filter(x=>x.id!==id))},
-  addSchool(s){const a=this.schools();a.push(s);this.save('schools',a)},
-  updateSchool(s){const a=this.schools();const i=a.findIndex(x=>x.id===s.id);if(i>=0)a[i]=s;else a.push(s);this.save('schools',a)},
+  addUser(u,opts){const a=this.users();a.push(u);return this.save('users',a,opts)},
+  updateUser(u,opts){const a=this.users();const i=a.findIndex(x=>x.id===u.id);if(i>=0)a[i]=u;else a.push(u);return this.save('users',a,opts)},
+  deleteUser(id){return this.save('users',this.users().filter(x=>x.id!==id))},
+  addSchool(s,opts){const a=this.schools();a.push(s);return this.save('schools',a,opts)},
+  updateSchool(s,opts){const a=this.schools();const i=a.findIndex(x=>x.id===s.id);if(i>=0)a[i]=s;else a.push(s);return this.save('schools',a,opts)},
   addChild(c,opts){const a=this.children();a.push(c);return this.save('children',a,opts)},
   updateChild(c,opts){const a=this.children();const i=a.findIndex(x=>x.id===c.id);if(i>=0)a[i]=c;else a.push(c);return this.save('children',a,opts)},
   deleteChild(id){return this.save('children',this.children().filter(x=>x.id!==id))},
@@ -1359,8 +1359,8 @@ const DB = {
   childName(id){return this.children().find(c=>c.id===id)?.name||id},
   schoolName(id){return this.schools().find(s=>s.id===id)?.name||id},
   branchName(id){return this.branches().find(b=>b.id===id)?.name||'—'},
-  addBranch(b){const a=this.branches();a.push(b);this.set('branches',a)},
-  updateBranch(b){const a=this.branches();const i=a.findIndex(x=>x.id===b.id);if(i>=0)a[i]=b;else a.push(b);this.set('branches',a)},
+  addBranch(b,opts){const a=this.branches();a.push(b);return this.set('branches',a,opts)},
+  updateBranch(b,opts){const a=this.branches();const i=a.findIndex(x=>x.id===b.id);if(i>=0)a[i]=b;else a.push(b);return this.set('branches',a,opts)},
 };
 
 // =========================================================
@@ -1422,6 +1422,15 @@ const DEFAULT_FEE_PLANS=[
   {id:'daily',name:'يومي',days:1,active:true},
   {id:'weekly',name:'أسبوعي',days:7,active:true},
   {id:'monthly',name:'٣٠ يوم',days:30,active:true},
+  {id:'term',name:'ترم دراسي',days:90,active:true},
+  {id:'year',name:'سنة دراسية',days:270,active:true},
+];
+// باقات جاهزة تُضاف بضغطة من محرّر الرسوم (لمدرسة عدّلت باقاتها من قبل
+// فلا تصلها الإضافات الجديدة تلقائياً — لا نعيد باقة حذفتها عن قصد).
+const READY_FEE_PLANS=[
+  {id:'term',name:'ترم دراسي',days:90},
+  {id:'year',name:'سنة دراسية',days:270},
+  {id:'semester2',name:'نصف ترم',days:45},
 ];
 const DEFAULT_PAY_METHODS=[
   {k:'cash',name:'كاش',icon:'money',active:true},
@@ -6251,7 +6260,11 @@ settings(){
             <button class="btn btn-danger btn-sm" style="margin-bottom:2px" onclick="this.closest('.fp-row').remove()" title="حذف"><i class="ic ic-trash"></i></button>
           </div>`).join('')}
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="_addFeePlanRow()"><i class="ic ic-plus"></i> إضافة باقة</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-secondary btn-sm" onclick="_addFeePlanRow()"><i class="ic ic-plus"></i> إضافة باقة</button>
+          <span style="font-size:12px;color:#94a3b8">جاهزة:</span>
+          ${READY_FEE_PLANS.map(r=>`<button class="btn btn-secondary btn-xs" onclick="_addReadyPlan('${r.id}')"><i class="ic ic-plus"></i> ${esc(r.name)}</button>`).join('')}
+        </div>
       </div>`;
     const branchCards=branches.map(b=>`
       <div class="card" style="margin-bottom:16px">
@@ -9425,7 +9438,7 @@ function toggleSchoolField(){
   }
 }
 
-function saveBranch(edit=false){
+async function saveBranch(edit=false){
   const name=document.getElementById('br-name')?.value?.trim();
   if(!name){alert('اسم الفرع مطلوب');return}
   const bid=edit?document.getElementById('br-id')?.value:uid();
@@ -9445,13 +9458,15 @@ function saveBranch(edit=false){
     toast(`باقتك الحالية تسمح بـ ${pkgLimit('maxBranches')} فرع — رقّي الباقة لإضافة المزيد`,'error');
     return;
   }
-  if(edit) DB.updateBranch(b); else DB.addBranch(b);
+  try{
+    if(edit) await DB.updateBranch(b,{quiet:true}); else await DB.addBranch(b,{quiet:true});
+  }catch(err){ alert(_saveErrMsg(err)); return; }
   toast(edit?'<i class="ic ic-check"></i> تم حفظ الفرع':'<i class="ic ic-check"></i> تم إضافة الفرع');
   App.closeModal();
   if(App.view==='branches') App.refresh(); else App.go('branches');
 }
 
-function saveSchool(edit=false){
+async function saveSchool(edit=false){
   const name=document.getElementById('sc-name')?.value?.trim();
   if(!name){alert('اسم المدرسة مطلوب');return}
   const s={
@@ -9463,7 +9478,9 @@ function saveSchool(edit=false){
     joinDate:document.getElementById('sc-date')?.value||T0,
     isActive:true,
   };
-  if(edit) DB.updateSchool(s); else DB.addSchool(s);
+  try{
+    if(edit) await DB.updateSchool(s,{quiet:true}); else await DB.addSchool(s,{quiet:true});
+  }catch(err){ alert(_saveErrMsg(err)); return; }
   toast(edit?'<i class="ic ic-check"></i> تم حفظ المدرسة':'<i class="ic ic-check"></i> تم إضافة المدرسة');
   App.closeModal();
   if(App.view==='schools') App.refresh(); else App.go('schools');
@@ -10375,6 +10392,18 @@ function _addFeePlanRow(){
     +'<div class="input-group" style="margin:0"><label>مفعّلة</label><select class="input fp-active"><option value="1">نعم</option><option value="0">لا</option></select></div>'
     +'<button class="btn btn-danger btn-sm" style="margin-bottom:2px" onclick="this.closest(\'.fp-row\').remove()"><i class="ic ic-trash"></i></button>';
   wrap.appendChild(d);
+}
+// يضيف باقة جاهزة (ترم / سنة دراسية...) إن لم تكن موجودة أصلاً في المحرّر
+function _addReadyPlan(id){
+  const r=READY_FEE_PLANS.find(x=>x.id===id); if(!r) return;
+  const wrap=document.getElementById('fp-rows'); if(!wrap) return;
+  const exists=[...wrap.querySelectorAll('.fp-name')].some(i=>(i.value||'').trim()===r.name);
+  if(exists){toast('«'+r.name+'» موجودة بالفعل في القائمة','warn');return;}
+  _addFeePlanRow();
+  const row=wrap.lastElementChild;
+  row.querySelector('.fp-name').value=r.name;
+  row.querySelector('.fp-days').value=r.days;
+  toast('أُضيفت «'+r.name+'» — عدّلي عدد الأيام إن أردتِ ثم احفظي');
 }
 function saveSettingsPrices(){
   if(!Auth.isSuperAdmin()) return;
@@ -11889,7 +11918,7 @@ function exportAllData(){
   XLSX.writeFile(wb,'مدارك-الطفل-تصدير-شامل-'+date+'.xlsx');
 }
 
-function saveTeacher(edit=false){
+async function saveTeacher(edit=false){
   const name=document.getElementById('t-name')?.value?.trim();
   const username=document.getElementById('t-username')?.value?.trim();
   const pass=document.getElementById('t-pass')?.value?.trim();
@@ -11905,10 +11934,11 @@ function saveTeacher(edit=false){
     if(!orig){toast('المعلمة غير موجودة','error');App.closeModal();return;}
     const u={...orig,name,username,branchId,period,phone};
     if(pass) u.password=pass;
-    DB.updateUser(u);
+    try{ await DB.updateUser(u,{quiet:true}); }catch(err){ alert(_saveErrMsg(err)); return; }
   } else {
     if(DB.users().find(x=>x.username===username)){alert('اسم المستخدم مستخدم مسبقاً');return}
-    DB.addUser({id:uid(),name,username,password:pass,role:'teacher',schoolId,branchId,period,phone});
+    try{ await DB.addUser({id:uid(),name,username,password:pass,role:'teacher',schoolId,branchId,period,phone},{quiet:true}); }
+    catch(err){ alert(_saveErrMsg(err)); return; }
   }
   toast(edit?'<i class="ic ic-check"></i> تم حفظ التعديلات':'<i class="ic ic-check"></i> تم إضافة المعلمة');
   App.closeModal();
@@ -11922,7 +11952,7 @@ function deleteTeacher(id){
   App.refresh();
 }
 
-function saveUser(edit=false){
+async function saveUser(edit=false){
   const name=document.getElementById('u-name')?.value?.trim();
   const username=document.getElementById('u-username')?.value?.trim();
   const pass=document.getElementById('u-pass')?.value?.trim();
@@ -11945,11 +11975,13 @@ function saveUser(edit=false){
     if(!orig){toast('المستخدم غير موجود','error');App.closeModal();return;}
     const u={...orig,name,username,role,schoolId,branchId,period,phone,permissions:permissions||[]};
     if(pass) u.password=pass;
-    DB.updateUser(u);savedUserId=u.id;
+    try{ await DB.updateUser(u,{quiet:true}); }catch(err){ alert(_saveErrMsg(err)); return; }
+    savedUserId=u.id;
   } else {
     if(DB.users().find(x=>x.username===username)){alert('اسم المستخدم مستخدم مسبقاً');return}
     savedUserId=uid();
-    DB.addUser({id:savedUserId,name,username,password:pass,role,schoolId,branchId,period,phone,permissions:permissions||[]});
+    try{ await DB.addUser({id:savedUserId,name,username,password:pass,role,schoolId,branchId,period,phone,permissions:permissions||[]},{quiet:true}); }
+    catch(err){ alert(_saveErrMsg(err)); return; }
   }
   // ===== ربط الحساب بموظف في الموارد البشرية =====
   const linkEl=document.getElementById('u-emplink');
