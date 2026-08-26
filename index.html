@@ -10,7 +10,7 @@
 <!-- BUILD: 2026-08-23-v97 -->
 <script>
 (function(){
-  var BUILD='v102-20260824-4';
+  var BUILD='v103-20260824-5';
   var key='_madarak_build';
   var stored=localStorage.getItem(key);
   // إذا الإصدار اللي بالـURL لا يطابق BUILD، نُعيد التحميل بـURL جديد
@@ -714,6 +714,26 @@ const _writeFails={}; // key→count محاولات فشلت
 // نحفظ النص لا المرجع، لأن دوال الإضافة تعدّل المصفوفة نفسها في مكانها،
 // فالاحتفاظ بالمرجع كان يعيدنا إلى النسخة المعدَّلة ذاتها ويترك صفاً وهمياً.
 const _lastGood={};
+// المرآة المحلية كانت بمفتاح واحد لكل المتصفح ('ccs_children'...)، فمدرسة
+// جديدة على نفس الجهاز كانت تقرأ بيانات مدرسة سابقة عند غياب المفتاح على
+// السيرفر. المفتاح الآن مرتبط بهوية المدرسة.
+function _tenantScope(){
+  try{ return (TenantSession&&TenantSession.tenant&&TenantSession.tenant.id)||'anon'; }catch(e){ return 'anon'; }
+}
+function _lsKey(k){ return 'ccs_'+_tenantScope()+'_'+k; }
+// تنظيف مفاتيح النسخة القديمة غير المرتبطة بمدرسة (السيرفر هو المرجع)
+function _purgeLegacyLocal(){
+  try{
+    const keep=new Set(['ccs_clientId']);
+    for(let i=localStorage.length-1;i>=0;i--){
+      const key=localStorage.key(i);
+      if(!key||!key.startsWith('ccs_')||keep.has(key)) continue;
+      const rest=key.slice(4);
+      // مفاتيح النسخة الجديدة تحوي هوية المدرسة قبل اسم المفتاح
+      if(rest.startsWith('bak_')||rest.indexOf('_')===-1) localStorage.removeItem(key);
+    }
+  }catch(e){}
+}
 function _markGood(k,serialized){ _lastGood[k]=serialized; }
 // عدّاد الكتابات المعلّقة — يمنع إغلاق الصفحة أثناء حفظ لم يصل السيرفر بعد
 let _pendingWrites=0;
@@ -812,7 +832,7 @@ function _onKeyValue(k,val){
     if(cur.length>0){console.warn('[sync] تم تجاهل مزامنة فارغة لـ'+k+' لحماية '+cur.length+' سجل');return;}
   }
   _mem[k]=val;
-  try{localStorage.setItem('ccs_'+k,incoming);}catch{}
+  try{localStorage.setItem(_lsKey(k),incoming);}catch{}
   _backupData(k,val); // نسخ احتياطي للحضور القادم من المزامنة أيضاً
   // ضمان تحديث بيانات المستخدم الحالي إن تغيّر المستخدمون
   if(k==='users'&&Auth.user&&Auth.user.id){
@@ -826,7 +846,7 @@ function _backupData(k,v){
   if(k!=='attendance'&&k!=='hr_attendance') return;
   if(!Array.isArray(v)||v.length===0) return; // لا نحفظ نسخة فارغة
   try{
-    const key='ccs_bak_'+k;
+    const key='ccs_'+_tenantScope()+'_bak_'+k;
     let arr=[];try{arr=JSON.parse(localStorage.getItem(key)||'[]');}catch{}
     // تجنّب حفظ نسخ متطابقة متتالية
     if(arr[0]&&arr[0].n===v.length&&(Date.now()-arr[0].t)<120000) return;
@@ -838,7 +858,7 @@ function _backupData(k,v){
 // استرجاع الحضور من نسخة احتياطية (دمج — لا يخسر أي سجل موجود)
 function restoreAttBackup(kind){
   if(!Auth.isSuperAdmin()){toast('الاسترجاع للمدير العام فقط','error');return;}
-  let arr=[];try{arr=JSON.parse(localStorage.getItem('ccs_bak_'+kind)||'[]');}catch{}
+  let arr=[];try{arr=JSON.parse(localStorage.getItem('ccs_'+_tenantScope()+'_bak_'+kind)||'[]');}catch{}
   if(!arr.length){alert('لا توجد نسخ احتياطية على هذا الجهاز بعد.');return;}
   const curArr=DB.get(kind)||[];
   const list=arr.map((b,i)=>`${i}: ${new Date(b.t).toLocaleString('en-GB')} — ${b.n} سجل`).join('\n');
@@ -1004,7 +1024,7 @@ function _startSyncWatchdog(){
 const DB = {
   get(k){
     if(_mem.hasOwnProperty(k)) return _mem[k];
-    try{return JSON.parse(localStorage.getItem('ccs_'+k))}catch{return null}
+    try{return JSON.parse(localStorage.getItem(_lsKey(k)))}catch{return null}
   },
   // يعيد وعداً (Promise) يتحقّق فقط بعد تأكيد الخادم للحفظ — لا نُخبر المستخدمة
   // بأن البيانات حُفظت قبل أن تصل فعلاً إلى السيرفر.
@@ -1019,9 +1039,9 @@ const DB = {
     // المرآة المحلية مجرد ذاكرة مؤقتة؛ إن امتلأت مساحة المتصفح نحذف المفتاح
     // بدل ترك نسخة قديمة تُقرأ لاحقاً وكأنها الأحدث.
     try{
-      if(serialized!==null) localStorage.setItem('ccs_'+k,serialized);
+      if(serialized!==null) localStorage.setItem(_lsKey(k),serialized);
     }catch(e){
-      try{localStorage.removeItem('ccs_'+k);}catch{}
+      try{localStorage.removeItem(_lsKey(k));}catch{}
       console.warn('[DB] مساحة المتصفح ممتلئة — الاعتماد على السيرفر للمفتاح '+k);
     }
     _backupData(k,v); // نسخ احتياطي دوري للحضور (حماية من الفقدان)
@@ -1032,8 +1052,8 @@ const DB = {
         else { delete _mem[k]; }
       }catch{ delete _mem[k]; }
       try{
-        if(hadGood) localStorage.setItem('ccs_'+k,prevSerialized);
-        else localStorage.removeItem('ccs_'+k);
+        if(hadGood) localStorage.setItem(_lsKey(k),prevSerialized);
+        else localStorage.removeItem(_lsKey(k));
       }catch{}
     };
     // وضع التخزين على الخادم (الأساسي)
@@ -1093,7 +1113,13 @@ const DB = {
   // قد ترمي خطأ برمز 'subscription_inactive' أو 'unauthorized' — يتولّى المستدعي (startAppForTenant) عرض الشاشة المناسبة.
   async initStorage(){
     const backendData=await _backendGetAll();
+    _purgeLegacyLocal();
     _storageMode='backend';
+    // تفريغ ذاكرة المدرسة السابقة قبل تحميل الحالية: تسجيل الدخول بمدرسة
+    // أخرى في نفس التبويب (بدون إعادة تحميل) كان يُبقي مفاتيح المدرسة
+    // السابقة، فترث المدرسة الجديدة كل مفتاح لا تملكه هي على السيرفر.
+    Object.keys(_mem).forEach(k=>{delete _mem[k];});
+    Object.keys(_lastGood).forEach(k=>{delete _lastGood[k];});
     if(backendData){
       Object.assign(_mem,backendData);
       // خط الأساس للتراجع: ما هو موجود فعلاً على السيرفر الآن
@@ -1150,9 +1176,12 @@ const DB = {
     const missing={};
     Object.keys(SEED).forEach(k=>{
       if(this.get(k)===null){
-        _mem[k]=SEED[k];
-        try{localStorage.setItem('ccs_'+k,JSON.stringify(SEED[k]));}catch{}
-        missing[k]=SEED[k];
+        // نسخة مستقلة: إسناد SEED بالمرجع كان يجعل أي تعديل (تعديل فرع مثلاً)
+        // يغيّر البذرة نفسها فتظهر بيانات مدرسة عند مدرسة أخرى في نفس الجلسة.
+        let seedCopy; try{seedCopy=JSON.parse(JSON.stringify(SEED[k]));}catch(e){seedCopy=SEED[k];}
+        _mem[k]=seedCopy;
+        try{localStorage.setItem(_lsKey(k),JSON.stringify(seedCopy));}catch{}
+        missing[k]=seedCopy;
       }
     });
     // مدرسة جديدة تماماً: أنشئ مديرها العام من بيانات التسجيل الفعلية بدل بيانات افتراضية مشتركة
@@ -1160,13 +1189,13 @@ const DB = {
       const t=TenantSession.tenant||{};
       const admin={id:'sa1',username:TenantSession.pendingCreds.username,password:TenantSession.pendingCreds.password,role:'superadmin',name:t.contactPerson||t.name||'الإدارة العامة',phone:t.phone||''};
       _mem['users']=[admin]; missing['users']=[admin];
-      try{localStorage.setItem('ccs_users',JSON.stringify([admin]));}catch{}
+      try{localStorage.setItem(_lsKey('users'),JSON.stringify([admin]));}catch{}
     }
     if((_mem['schools']||[]).length===0 && typeof TenantSession!=='undefined' && TenantSession.tenant){
       const t=TenantSession.tenant;
       const sch=[{id:'s1',name:t.name||'مدرستي',contactPerson:t.contactPerson||'',phone:t.phone||'',email:t.email||'',isActive:true,joinDate:T0}];
       _mem['schools']=sch; missing['schools']=sch;
-      try{localStorage.setItem('ccs_schools',JSON.stringify(sch));}catch{}
+      try{localStorage.setItem(_lsKey('schools'),JSON.stringify(sch));}catch{}
     }
     if(Object.keys(missing).length) _backendBulk(missing).catch(()=>{});
     // ضمان سلامة دور المدير العام — إصلاح إذا تغيّر
@@ -1179,7 +1208,9 @@ const DB = {
   },
   users(){return this.get('users')||[]},
   schools(){return this.get('schools')||[]},
-  branches(){return this.get('branches')||SEED.branches},
+  // نسخة مستقلة من البذرة — كانت تُعاد بالمرجع فيعدّلها updateBranch/addBranch
+  // في مكانها، فتتسرّب تعديلات مدرسة إلى أخرى داخل نفس الجلسة.
+  branches(){const v=this.get('branches'); return Array.isArray(v)?v:SEED.branches.map(x=>({...x}));},
   children(){return this.get('children')||[]},
   subscriptions(){return this.get('subscriptions')||[]},
   attendance(){return this.get('attendance')||[]},
